@@ -1,0 +1,20 @@
+.env
+# RAG DB: 작업용 사본(chroma_db_dd3/)은 배포 이미지에 넣으려고 커밋한다. 원본 사본만 제외.
+reference/chroma_db_dd3/
+chroma_db_dd3/*-wal
+chroma_db_dd3/*-shm
+cache/
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+evals/results/
+logs/
+config/drafts/
+data/
+danbi/api/web/
+frontend/node_modules/
+
+# Claude Code 지침 파일 (로컬 전용)
+CLAUDE.md
+.claude/

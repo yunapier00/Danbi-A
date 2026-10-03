@@ -1,0 +1,1428 @@
+# 전체 학과 목록 — scripts/collect_dept_list.py가 2026-10-02 자동 생성. 직접 고치지 말고 다시 수집한다.
+# 출처: https://www.dankook.ac.kr/web/kor/home '대학' 메뉴의 단과대학 페이지 deptData
+# 사이트 108개 (전공 120개) — dku_cms 98, dku_www 2, external 3, none 5
+# platform: dku_cms(자동 탐색 대상) | dku_www(메인 사이트 하위, 탐색해서 확인) | external(별도 사이트) | none(홈페이지 없음)
+
+koreanlitnlang:
+  name: 국어국문학과
+  college: 문과대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/koreanlitnlang
+  majors:
+  - 국어국문학과
+  office:
+    tel: 031-8005-3020
+    room: 인문관 506호
+  org_ids:
+  - '2000000992'
+history:
+  name: 사학과
+  college: 문과대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/history
+  majors:
+  - 사학과
+  office:
+    tel: 031-8005-3030
+    room: 인문관 507호
+  org_ids:
+  - '2000000993'
+philosophy:
+  name: 철학과
+  college: 문과대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/philosophy
+  majors:
+  - 철학과
+  office:
+    tel: 031-8005-3039
+    room: 인문관 308호
+  org_ids:
+  - '2000000994'
+bahumanities:
+  name: 영미인문학과
+  college: 문과대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/bahumanities
+  majors:
+  - 영미인문학과
+  office:
+    tel: 031-8005-3060
+    room: 인문관 308호
+  org_ids:
+  - '2000000995'
+law:
+  name: 법학과
+  college: 법과대학
+  campus: 죽전
+  platform: external
+  homepage: https://law.dankook.ac.kr/web/law
+  majors:
+  - 법학과
+  office:
+    tel: 031-8005-3273/3278
+    room: 법학관 328호
+  org_ids:
+  - '2000001057'
+polisci:
+  name: 정치외교학과
+  college: 사회과학대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/polisci
+  majors:
+  - 정치외교학과
+  office:
+    tel: 031-8005-3313
+    room: 사회과학관 103호
+  org_ids:
+  - '2000001067'
+dkupa:
+  name: 행정학과
+  college: 사회과학대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/dkupa
+  majors:
+  - 행정학과
+  office:
+    tel: 031-8005-3294
+    room: 사회과학관 104호
+  org_ids:
+  - '2000001068'
+urban-real:
+  name: 도시지역계획학전공·부동산학전공
+  college: 사회과학대학 도시계획·부동산학부
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/urban-real
+  majors:
+  - 도시지역계획학전공
+  - 부동산학전공
+  office:
+    tel: 031-8005-3323
+    room: 사회과학관 306호
+  org_ids:
+  - '2000001070'
+  - '2000001071'
+comm:
+  name: 저널리즘전공·영상콘텐츠전공·광고홍보전공
+  college: 사회과학대학 미디어커뮤니케이션학부
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/comm
+  majors:
+  - 저널리즘전공
+  - 영상콘텐츠전공
+  - 광고홍보전공
+  office:
+    tel: 031-8005-3359
+    room: 미디어센터 103호
+  org_ids:
+  - '2000005572'
+  - '2000005573'
+  - '2000005574'
+counseling:
+  name: 상담학과
+  college: 사회과학대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/counseling
+  majors:
+  - 상담학과
+  office:
+    tel: 031-8005-3360
+    room: 소프트웨어 ICT관 103호
+  org_ids:
+  - '2000001077'
+econ:
+  name: 경제학과
+  college: 경영경제대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/econ
+  majors:
+  - 경제학과
+  office:
+    tel: 031-8005-3380
+    room: 상경관 304호
+  org_ids:
+  - '2000004988'
+trade:
+  name: 무역학과
+  college: 경영경제대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/trade
+  majors:
+  - 무역학과
+  office:
+    tel: 031-8005-3394
+    room: 상경관 304호
+  org_ids:
+  - '2000004989'
+bu:
+  name: 경영학전공
+  college: 경영경제대학 경영학부
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/bu
+  majors:
+  - 경영학전공
+  office:
+    tel: 031-8005-3440,3423~4
+    room: 상경관 305호
+  org_ids:
+  - '2000004991'
+acc:
+  name: 회계학전공
+  college: 경영경제대학 경영학부
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/acc
+  majors:
+  - 회계학전공
+  office:
+    tel: 031-8005-3426
+    room: 상경관 305호
+  org_ids:
+  - '2000004992'
+industrialm:
+  name: 산업경영학과(야)
+  college: 경영경제대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/industrialm
+  majors:
+  - 산업경영학과(야)
+  office:
+    tel: 031-8005-3408
+    room: 상경관 305호
+  org_ids:
+  - '2000004993'
+eee:
+  name: 전자전기공학과
+  college: 공과대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/eee
+  majors:
+  - 전자전기공학과
+  office:
+    tel: 031-8005-3626/3601
+    room: 제2공학관 215호
+  org_ids:
+  - '2000005707'
+sce:
+  name: 융합반도체공학과
+  college: 공과대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/sce
+  majors:
+  - 융합반도체공학과
+  office:
+    tel: 031-8005-3626/3601
+    room: 제2공학관 215호
+  org_ids:
+  - '2000005708'
+polymer:
+  name: 고분자공학전공
+  college: 공과대학 고분자시스템공학부
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/polymer
+  majors:
+  - 고분자공학전공
+  office:
+    tel: 031-8005-3580/3591
+    room: 제3공학관 406호
+  org_ids:
+  - '2000004997'
+fiber:
+  name: 융합소재공학전공·파이버융합소재공학전공
+  college: 공과대학 고분자시스템공학부
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/fiber
+  majors:
+  - 융합소재공학전공
+  - 파이버융합소재공학전공
+  office:
+    tel: 031-8005-3560
+    room: 제3공학관 306호
+  org_ids:
+  - '2000006012'
+  - '2000004998'
+dkucee:
+  name: 인프라건설공학과·토목환경공학과
+  college: 공과대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/dkucee
+  majors:
+  - 인프라건설공학과
+  - 토목환경공학과
+  office:
+    tel: 031-8005-3470/3478
+    room: 제1공학관 214호
+  org_ids:
+  - '2000006014'
+  - '2000001235'
+me:
+  name: 기계공학과
+  college: 공과대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/me
+  majors:
+  - 기계공학과
+  office:
+    tel: 031-8005-3497
+    room: 제1공학관 517호
+  org_ids:
+  - '2000001236'
+chem:
+  name: 화학공학과
+  college: 공과대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/chem
+  majors:
+  - 화학공학과
+  office:
+    tel: 031-8005-3535/3543
+    room: 제3공학관 217호
+  org_ids:
+  - '2000001237'
+archi:
+  name: 건축학전공·건축공학전공
+  college: 공과대학 건축학부
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/archi
+  majors:
+  - 건축학전공
+  - 건축공학전공
+  office:
+    tel: 031-8005-3698/3726,3724
+    room: 제1공학관 412호
+  org_ids:
+  - '2000005000'
+  - '2000005001'
+sw:
+  name: 소프트웨어학과
+  college: AI융합대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/sw
+  majors:
+  - 소프트웨어학과
+  office:
+    tel: 031-8005-3227/3966
+    room: 소프트웨어 ICT관 311호
+  org_ids:
+  - '2000006204'
+  - '2000004793'
+ace:
+  name: 컴퓨터공학과
+  college: AI융합대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/ace
+  majors:
+  - 컴퓨터공학과
+  office:
+    tel: 031-8005-3653,3661
+    room: 제2공학관 516호
+  org_ids:
+  - '2000006205'
+  - '2000005002'
+dkustat:
+  name: 통계데이터사이언스학과
+  college: AI융합대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/dkustat
+  majors:
+  - 통계데이터사이언스학과
+  office:
+    tel: 031-8005-3256
+    room: 소프트웨어 ICT관 311호
+  org_ids:
+  - '2000006206'
+  - '2000005704'
+indsec:
+  name: 사이버보안학과
+  college: AI융합대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/indsec
+  majors:
+  - 사이버보안학과
+  office:
+    tel: 031-8005-3190
+    room: 소프트ICT관 311호
+  org_ids:
+  - '2000006207'
+  - '2000005706'
+ai:
+  name: 인공지능학과
+  college: AI융합대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/ai
+  majors:
+  - 인공지능학과
+  office:
+    tel: 031-8005-3257
+    room: 소프트웨어ICT관 311호
+  org_ids:
+  - '2000006208'
+swcon:
+  name: SW융합학부
+  college: AI융합대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/swcon
+  majors:
+  - SW융합학부
+  office:
+    tel: 031-8005-3143
+    room: 소프트웨어ICT관 311호
+  org_ids:
+  - '2000006209'
+  - '2000004796'
+ai-architecture-website:
+  name: AI건축융합학과
+  college: AI융합대학
+  campus: 죽전
+  platform: external
+  homepage: https://ai-architecture-website.pages.dev
+  majors:
+  - AI건축융합학과
+  office: {}
+  org_ids:
+  - '2000006218'
+hankyo:
+  name: 한문교육과
+  college: 사범대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/hankyo
+  majors:
+  - 한문교육과
+  office:
+    tel: 031-8005-3790
+    room: 사범관 318호
+  org_ids:
+  - '2000001325'
+specialedu:
+  name: 특수교육과
+  college: 사범대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/specialedu
+  majors:
+  - 특수교육과
+  office:
+    tel: 031-8005-3802
+    room: 사범관 321호
+  org_ids:
+  - '2000001326'
+mathedu:
+  name: 수학교육과
+  college: 사범대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/mathedu
+  majors:
+  - 수학교육과
+  office:
+    tel: 031-8005-3828
+    room: 사범관 417호
+  org_ids:
+  - '2000001329'
+sciedu:
+  name: 과학교육과
+  college: 사범대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/sciedu
+  majors:
+  - 과학교육과
+  office:
+    tel: 031-8005-3840
+    room: 사범관 414호
+  org_ids:
+  - '2000001330'
+danche:
+  name: 체육교육과
+  college: 사범대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/danche
+  majors:
+  - 체육교육과
+  office:
+    tel: 031-8005-3855
+    room: 체육관 109호
+  org_ids:
+  - '2000001335'
+teachertraining:
+  name: 교직교육과
+  college: 사범대학
+  campus: 죽전
+  platform: dku_www
+  homepage: https://dankook.ac.kr/web/teachertraining
+  majors:
+  - 교직교육과
+  office:
+    tel: 031-8005-3801
+    room: 사범관 411호
+  org_ids:
+  - '2000001336'
+ceramicarts:
+  name: 도예과
+  college: 음악·예술대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/ceramicarts
+  majors:
+  - 도예과
+  office:
+    tel: 031-8005-3088
+    room: 미술관 304호
+  org_ids:
+  - '2000005005'
+communicationdesign:
+  name: 커뮤니케이션디자인전공
+  college: 음악·예술대학 디자인학부
+  campus: 죽전
+  platform: dku_www
+  homepage: https://www.dankook.ac.kr/web/communicationdesign
+  majors:
+  - 커뮤니케이션디자인전공
+  office:
+    tel: 031-8005-3100
+    room: 미술관 320호
+  org_ids:
+  - '2000005007'
+fashion:
+  name: 패션산업디자인전공
+  college: 음악·예술대학 디자인학부
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/fashion
+  majors:
+  - 패션산업디자인전공
+  office:
+    tel: 031-8005-3130
+    room: 미술관 406호
+  org_ids:
+  - '2000005008'
+performance-film:
+  name: 연극전공·영화전공·뮤지컬전공
+  college: 음악·예술대학 공연영화학부
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/performance-film
+  majors:
+  - 연극전공
+  - 영화전공
+  - 뮤지컬전공
+  office:
+    tel: 031-8005-3110
+    room: 체육관 B220호
+  org_ids:
+  - '2000005010'
+  - '2000005011'
+  - '2000005012'
+dance:
+  name: 무용과
+  college: 음악·예술대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/dance
+  majors:
+  - 무용과
+  office:
+    tel: 031-8005-3120
+    room: 무용관 101호
+  org_ids:
+  - '2000005013'
+piano:
+  name: 피아노전공
+  college: 음악·예술대학 음악학부
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/piano
+  majors:
+  - 피아노전공
+  office:
+    tel: 031-8005-3890
+    room: 음악관 223호
+  org_ids:
+  - '2000005155'
+orchestral-instrument:
+  name: 관현악전공
+  college: 음악·예술대학 음악학부
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/orchestral-instrument
+  majors:
+  - 관현악전공
+  office:
+    tel: 031-8005-3891
+    room: 음악관 223호
+  org_ids:
+  - '2000005156'
+vocalmusic:
+  name: 성악전공
+  college: 음악·예술대학 음악학부
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/vocalmusic
+  majors:
+  - 성악전공
+  office:
+    tel: 031-8005-3908
+    room: 음악관 223호
+  org_ids:
+  - '2000005016'
+composition:
+  name: 작곡전공
+  college: 음악·예술대학 음악학부
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/composition
+  majors:
+  - 작곡전공
+  office:
+    tel: 031-8005-3918
+    room: 음악관 223호
+  org_ids:
+  - '2000005017'
+koreamusic:
+  name: 국악전공
+  college: 음악·예술대학 음악학부
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/koreamusic
+  majors:
+  - 국악전공
+  office:
+    tel: 031-8005-3926
+    room: 음악관 223호
+  org_ids:
+  - '2000005018'
+ib:
+  name: 국제경영학과
+  college: 프리무스국제대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/ib
+  majors:
+  - 국제경영학과
+  office:
+    tel: 031-8005-3374
+    room: 국제관 302호
+  org_ids:
+  - '2000005772'
+mobilesystems:
+  name: 모바일시스템공학과
+  college: 프리무스국제대학
+  campus: 죽전
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/mobilesystems
+  majors:
+  - 모바일시스템공학과
+  office:
+    tel: 031-8005-3638
+    room: 국제관 302호
+  org_ids:
+  - '2000005773'
+org-2000005774:
+  name: 바이오소재융합공학과
+  college: 프리무스국제대학
+  campus: 죽전
+  platform: none
+  homepage: null
+  majors:
+  - 바이오소재융합공학과
+  office: {}
+  org_ids:
+  - '2000005774'
+org-2000005775:
+  name: 한국학과
+  college: 프리무스국제대학
+  campus: 죽전
+  platform: none
+  homepage: null
+  majors:
+  - 한국학과
+  office: {}
+  org_ids:
+  - '2000005775'
+org-2000005776:
+  name: 연기영상예술학과
+  college: 프리무스국제대학
+  campus: 죽전
+  platform: none
+  homepage: null
+  majors:
+  - 연기영상예술학과
+  office: {}
+  org_ids:
+  - '2000005776'
+org-2000005777:
+  name: 글로벌기초교육학부
+  college: 프리무스국제대학
+  campus: 죽전
+  platform: none
+  homepage: null
+  majors:
+  - 글로벌기초교육학부
+  office: {}
+  org_ids:
+  - '2000005777'
+china:
+  name: 중국학전공
+  college: 외국어대학 아시아중동학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/china
+  majors:
+  - 중국학전공
+  office:
+    tel: 041-550-3170
+    room: 인문과학관 330호
+  org_ids:
+  - '2000005021'
+japanese:
+  name: 일본학전공
+  college: 외국어대학 아시아중동학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/japanese
+  majors:
+  - 일본학전공
+  office:
+    tel: 041-550-3190
+    room: 인문과학관 330호
+  org_ids:
+  - '2000005022'
+mongol:
+  name: 몽골학전공
+  college: 외국어대학 아시아중동학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/mongol
+  majors:
+  - 몽골학전공
+  office:
+    tel: 041-550-3230
+    room: 인문과학관 330호
+  org_ids:
+  - '2000005023'
+middleeasternstudies:
+  name: 중동학전공
+  college: 외국어대학 아시아중동학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/middleeasternstudies
+  majors:
+  - 중동학전공
+  office:
+    tel: 041-550-3120
+    room: 인문과학관 330호
+  org_ids:
+  - '2000005024'
+vietnam:
+  name: 베트남학전공
+  college: 외국어대학 아시아중동학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/vietnam
+  majors:
+  - 베트남학전공
+  office:
+    tel: 041-550-3250
+    room: 인문과학관 330호
+  org_ids:
+  - '2000005168'
+german:
+  name: 독일학전공
+  college: 외국어대학 유럽중남미학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/german
+  majors:
+  - 독일학전공
+  office:
+    tel: 041-550-3150
+    room: 인문과학관 221호
+  org_ids:
+  - '2000005025'
+dkfrance:
+  name: 프랑스학전공
+  college: 외국어대학 유럽중남미학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/dkfrance
+  majors:
+  - 프랑스학전공
+  office:
+    tel: 041-550-3160
+    room: 인문과학관 221호
+  org_ids:
+  - '2000005026'
+spain:
+  name: 스페인중남미학전공
+  college: 외국어대학 유럽중남미학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/spain
+  majors:
+  - 스페인중남미학전공
+  office:
+    tel: 041-550-3180
+    room: 인문과학관 221호
+  org_ids:
+  - '2000005027'
+russia:
+  name: 러시아학전공
+  college: 외국어대학 유럽중남미학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/russia
+  majors:
+  - 러시아학전공
+  office:
+    tel: 041-550-3210
+    room: 외국어대학 221호
+  org_ids:
+  - '2000005028'
+portuguese:
+  name: 포르투갈브라질학전공
+  college: 외국어대학 유럽중남미학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/portuguese
+  majors:
+  - 포르투갈브라질학전공
+  office:
+    tel: 041-550-3270
+    room: 인문과학관 221호
+  org_ids:
+  - '2000005029'
+english:
+  name: 영어과
+  college: 외국어대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/english
+  majors:
+  - 영어과
+  office:
+    tel: 041-550-3130
+    room: 인문과학관 221호
+  org_ids:
+  - '2000001449'
+globalhankook:
+  name: 글로벌한국어과
+  college: 외국어대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/globalhankook
+  majors:
+  - 글로벌한국어과
+  office:
+    tel: 041-550-3110
+    room: 인문과학관 330호
+  org_ids:
+  - '2000005169'
+mathematics:
+  name: 수학과
+  college: 과학기술대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/mathematics
+  majors:
+  - 수학과
+  office:
+    tel: 041-550-3410
+    room: 자연과학1관 201호
+  org_ids:
+  - '2000005031'
+physics:
+  name: 물리학과
+  college: 과학기술대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/physics
+  majors:
+  - 물리학과
+  office:
+    tel: 041-550-3420
+    room: 자연과학1관 201호
+  org_ids:
+  - '2000005032'
+chemistry:
+  name: 화학과
+  college: 과학기술대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/chemistry
+  majors:
+  - 화학과
+  office:
+    tel: 041-550-3430
+    room: 자연과학1관 225호
+  org_ids:
+  - '2000005033'
+foodnutrition:
+  name: 식품영양학과
+  college: 과학기술대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/foodnutrition
+  majors:
+  - 식품영양학과
+  office:
+    tel: 041-550-3470
+    room: 자연과학1관 201호
+  org_ids:
+  - '2000005034'
+mse:
+  name: 신소재공학과
+  college: 과학기술대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/mse
+  majors:
+  - 신소재공학과
+  office:
+    tel: 041-550-3530
+    room: 공학관 304호
+  org_ids:
+  - '2000005038'
+energy:
+  name: 에너지공학과
+  college: 과학기술대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/energy
+  majors:
+  - 에너지공학과
+  office:
+    tel: 041-529-6203
+    room: 공학관 304호
+  org_ids:
+  - '2000005040'
+dkme:
+  name: 경영공학과
+  college: 과학기술대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/dkme
+  majors:
+  - 경영공학과
+  office:
+    tel: 041-550-3570,3579
+    room: 공학관 304호
+  org_ids:
+  - '2000005041'
+pharm:
+  name: 제약공학과
+  college: 과학기술대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/pharm
+  majors:
+  - 제약공학과
+  office:
+    tel: 041-550-3590
+    room: 공학관 304호
+  org_ids:
+  - '2000005710'
+crops:
+  name: 식량생명공학전공
+  college: 바이오융합대학 생명공학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/crops
+  majors:
+  - 식량생명공학전공
+  office:
+    tel: 041-550-3620
+    room: 생명공학대학 206호
+  org_ids:
+  - '2000006089'
+animal:
+  name: 동물생명공학전공
+  college: 바이오융합대학 생명공학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/animal
+  majors:
+  - 동물생명공학전공
+  office:
+    tel: 041-550-3650
+    room: 생명자원과학관 206호
+  org_ids:
+  - '2000006090'
+dkuhort:
+  name: 환경원예학전공
+  college: 바이오융합대학 생명공학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/dkuhort
+  majors:
+  - 환경원예학전공
+  office:
+    tel: 041-550-3640
+    room: 생명공학대학 207호
+  org_ids:
+  - '2000006091'
+landscape:
+  name: 녹지조경학전공
+  college: 바이오융합대학 생명공학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/landscape
+  majors:
+  - 녹지조경학전공
+  office:
+    tel: 041-550-3630
+    room: 생명자원과학대학 301호
+  org_ids:
+  - '2000006092'
+biomedical20:
+  name: 의생명시스템학전공
+  college: 바이오융합대학 의생명과학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/biomedical20
+  majors:
+  - 의생명시스템학전공
+  office:
+    tel: 041-550-3670
+    room: 생명자원과학대학 207호
+  org_ids:
+  - '2000005722'
+biology:
+  name: 생명과학전공
+  college: 바이오융합대학 의생명과학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/biology
+  majors:
+  - 생명과학전공
+  office:
+    tel: 041-550-3440
+    room: 제1과학관 401-1호
+  org_ids:
+  - '2000005723'
+microbiology:
+  name: 미생물학전공
+  college: 바이오융합대학 의생명과학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/microbiology
+  majors:
+  - 미생물학전공
+  office:
+    tel: 041-529-6017
+    room: 제1과학관 503호
+  org_ids:
+  - '2000005724'
+food:
+  name: 식품공학과
+  college: 바이오융합대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/food
+  majors:
+  - 식품공학과
+  office:
+    tel: 041-529-6362
+    room: 공학관 517호
+  org_ids:
+  - '2000005725'
+cosmedmaterials:
+  name: 코스메디컬소재학과
+  college: 바이오융합대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/cosmedmaterials
+  majors:
+  - 코스메디컬소재학과
+  office:
+    tel: 041-550-3480
+    room: 제1 과학관 401-01호
+  org_ids:
+  - '2000005726'
+craft:
+  name: 공예전공
+  college: 예술대학 미술학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/craft
+  majors:
+  - 공예전공
+  office:
+    tel: 041-550-3740, 3749
+    room: 예술관 A동 310호 공예과 사무실
+  org_ids:
+  - '2000004625'
+oriental:
+  name: 동양화전공
+  college: 예술대학 미술학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/oriental
+  majors:
+  - 동양화전공
+  office:
+    tel: 041-550-3730
+    room: 예술관 A동 415호
+  org_ids:
+  - '2000004626'
+fineart:
+  name: 서양화전공
+  college: 예술대학 미술학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/fineart
+  majors:
+  - 서양화전공
+  office:
+    tel: 041-550-3720
+    room: 예술관 A동 109호
+  org_ids:
+  - '2000004627'
+joso:
+  name: 조소전공
+  college: 예술대학 미술학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/joso
+  majors:
+  - 조소전공
+  office:
+    tel: 041-550-3760
+    room: 예술관 C동 206호
+  org_ids:
+  - '2000004628'
+dkcw:
+  name: 문예창작과
+  college: 예술대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/dkcw
+  majors:
+  - 문예창작과
+  office:
+    tel: 041-550-3770
+    room: 예술관 D동 208호
+  org_ids:
+  - '2000001547'
+newmusicdku:
+  name: 뮤직테크놀러지전공
+  college: 예술대학 뉴뮤직학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/newmusicdku
+  majors:
+  - 뮤직테크놀러지전공
+  office:
+    tel: 041-550-3789
+    room: 예술관B동 321호
+  org_ids:
+  - '2000005712'
+jazzperformance:
+  name: 재즈퍼포먼스전공
+  college: 예술대학 뉴뮤직학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/jazzperformance
+  majors:
+  - 재즈퍼포먼스전공
+  office:
+    tel: 041-550-3781
+    room: 예술관 B동 321호
+  org_ids:
+  - '2000005713'
+singersongwriting:
+  name: 싱어송라이팅전공
+  college: 예술대학 뉴뮤직학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/singersongwriting
+  majors:
+  - 싱어송라이팅전공
+  office:
+    tel: 041-550-3780
+    room: 예술관 B동 321호
+  org_ids:
+  - '2000005714'
+sports:
+  name: 생활체육학과
+  college: 스포츠과학대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/sports
+  majors:
+  - 생활체육학과
+  office:
+    tel: 041-550-3810
+    room: 체육관 109호
+  org_ids:
+  - '2000001596'
+dsm:
+  name: 스포츠경영학과
+  college: 스포츠과학대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/dsm
+  majors:
+  - 스포츠경영학과
+  office:
+    tel: 041-550-3820
+    room: 체육관 109
+  org_ids:
+  - '2000001598'
+sportsscience:
+  name: 운동처방재활전공
+  college: 스포츠과학대학 국제스포츠학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/sportsscience
+  majors:
+  - 운동처방재활전공
+  office:
+    tel: 041-550-3830
+    room: 체육관 109호
+  org_ids:
+  - '2000005050'
+int_sports:
+  name: 국제스포츠전공
+  college: 스포츠과학대학 국제스포츠학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/int_sports
+  majors:
+  - 국제스포츠전공
+  office:
+    tel: 041-550-3860
+    room: 체육관 109호
+  org_ids:
+  - '2000005051'
+taekwondo:
+  name: 태권도전공
+  college: 스포츠과학대학 국제스포츠학부
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/taekwondo
+  majors:
+  - 태권도전공
+  office:
+    tel: 041-550-3860
+    room: 체육관 109호
+  org_ids:
+  - '2000005052'
+org-2000005709:
+  name: 골프전공
+  college: 스포츠과학대학 국제스포츠학부
+  campus: 천안
+  platform: none
+  homepage: null
+  majors:
+  - 골프전공
+  office:
+    tel: 041-550-3860
+    room: 체육관 109호
+  org_ids:
+  - '2000005709'
+med:
+  name: 의예과·의학과
+  college: 의과대학
+  campus: 천안
+  platform: external
+  homepage: https://med.dankook.ac.kr
+  majors:
+  - 의예과
+  - 의학과
+  office:
+    tel: 041-550-3851
+    room: 의과대학 151-2호
+  org_ids:
+  - '2000001603'
+  - '2000001604'
+publicadm:
+  name: 공공정책학과·공공정책학과(야)
+  college: 공공인재대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/publicadm
+  majors:
+  - 공공정책학과
+  - 공공정책학과(야)
+  office:
+    tel: 041-550-3310
+    room: 사회과학관 337호
+  org_ids:
+  - '2000005728'
+  - '2000005729'
+dkwelfare:
+  name: 사회복지학과
+  college: 공공인재대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/dkwelfare
+  majors:
+  - 사회복지학과
+  office:
+    tel: 041-550-3240
+    room: 사회과학관 337호
+  org_ids:
+  - '2000005730'
+ere:
+  name: 식품자원경제학과
+  college: 공공인재대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/ere
+  majors:
+  - 식품자원경제학과
+  office:
+    tel: 041-550-3610
+    room: 사회과학관 337호
+  org_ids:
+  - '2000005732'
+rokmcms:
+  name: 해병대군사학과
+  college: 공공인재대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/rokmcms
+  majors:
+  - 해병대군사학과
+  office:
+    tel: 041-550-3330
+    room: 사회과학관 336호(학과사무실) / 133호(훈육관실)
+  org_ids:
+  - '2000005731'
+biomedical:
+  name: 임상병리학과
+  college: 보건과학대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/biomedical
+  majors:
+  - 임상병리학과
+  office:
+    tel: 041-550-1450
+    room: 보건과학관 101호
+  org_ids:
+  - '2000005734'
+physical_therapy:
+  name: 물리치료학과
+  college: 보건과학대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/physical_therapy
+  majors:
+  - 물리치료학과
+  office:
+    tel: 041-550-1460
+    room: 보건과학관 101호
+  org_ids:
+  - '2000005735'
+healthadmin:
+  name: 보건행정학과
+  college: 보건과학대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/healthadmin
+  majors:
+  - 보건행정학과
+  office:
+    tel: 041-550-1470
+    room: 보건과학관 101호
+  org_ids:
+  - '2000005736'
+dentalhygiene:
+  name: 치위생학과
+  college: 보건과학대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/dentalhygiene
+  majors:
+  - 치위생학과
+  office:
+    tel: 041-550-1490
+    room: 보건과학관 101호
+  org_ids:
+  - '2000005737'
+psychology:
+  name: 심리학과·심리치료학과
+  college: 보건과학대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/psychology
+  majors:
+  - 심리학과
+  - 심리치료학과
+  office:
+    tel: 041-550-3260
+    room: 사회과학관 337호
+  org_ids:
+  - '2000006093'
+  - '2000005738'
+nursing:
+  name: 간호학과
+  college: 간호대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/nursing
+  majors:
+  - 간호학과
+  office:
+    tel: 041-550-3880
+    room: 의과대학 232-1호
+  org_ids:
+  - '2000004646'
+dentistry:
+  name: 치의예과·치의학과
+  college: 치과대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/dentistry
+  majors:
+  - 치의예과
+  - 치의학과
+  office:
+    tel: 041-550-1910
+    room: 치과대학 107호
+  org_ids:
+  - '2000001631'
+  - '2000001632'
+pharmacy:
+  name: 약학과
+  college: 약학대학
+  campus: 천안
+  platform: dku_cms
+  homepage: https://cms.dankook.ac.kr/web/pharmacy
+  majors:
+  - 약학과
+  office:
+    tel: 041-550-1404
+    room: 약학관 201호
+  org_ids:
+  - '2000001644'

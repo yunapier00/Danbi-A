@@ -1,0 +1,2413 @@
+# 학과 일괄 등록 — scripts/review_drafts.py가 2026-10-03 생성 (초안 + config/review_overrides.yaml).
+# 직접 고치지 말고 overrides를 고친 뒤 다시 생성한다. reviewed_by: claude = Claude 1차 검토, 사람 2차 검토 대상.
+# 공개 98개 · 보류 0개 (보류 = reviewed_at: null, 검색에 쓰지 않음)
+
+acc:
+  type: dku_cms
+  kind: department
+  name: 회계학전공
+  college: 경영경제대학 경영학부
+  aliases: [회계학]
+  campus: 죽전
+  office: {tel: 031-8005-3426, room: 상경관 305호}
+  base_url: https://cms.dankook.ac.kr/web/acc
+  description: 회계학전공(죽전) 졸업요건·학사 공지사항·장학정보·취업정보·단현재 공지·회계사/세무사·기타 공지사항·학과 소개·교과과정·교수
+  sections:
+    rules: {title: 졸업요건, path: /web/acc/-29}
+    notice: {title: 학사 공지사항, path: /web/acc/-21}
+    scholarship: {title: 장학정보, path: /web/acc/-7}
+    jobs: {title: 취업정보, path: /web/acc/-8}
+    notice_2: {title: 단현재 공지, path: /web/acc/-17}
+    jobs_2: {title: 회계사/세무사, path: /web/acc/-25}
+    notice_3: {title: 기타 공지사항, path: /web/acc/-22}
+  datasets:
+    dept_info:
+    - {path: /web/acc/-3}
+    curriculum:
+    - {path: /web/acc/-5, org: 경영경제대학 경영학부}
+    - {path: /web/acc/교과과정-학부-, org: 경영경제대학}
+    professors:
+    - {path: /web/acc/professor1}
+    - {path: /web/acc/학부}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+ace:
+  type: dku_cms
+  kind: department
+  name: 컴퓨터공학과
+  college: AI융합대학
+  aliases: [컴공, 컴퓨터공학]
+  campus: 죽전
+  office: {tel: '031-8005-3653,3661', room: 제2공학관 516호}
+  base_url: https://cms.dankook.ac.kr/web/ace
+  description: 컴퓨터공학과(죽전) 공모전정보·일반취업정보·공지사항·학과소식·교육세미나·학과 소개·교수·교과과정
+  sections:
+    activity: {title: 공모전정보, path: /web/ace/-39}
+    jobs: {title: 일반취업정보, path: /web/ace/-40}
+    notice: {title: 공지사항, path: /web/ace/notice}
+    activity_2: {title: 학과소식, path: /web/ace/-1}
+    activity_3: {title: 교육세미나, path: /web/ace/-41}
+  datasets:
+    dept_info:
+    - {path: /web/ace/-11}
+    professors:
+    - {path: /web/ace/-17}
+    curriculum:
+    - {path: /web/ace/curriculum, org: SW융합대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+ai:
+  type: dku_cms
+  kind: department
+  name: 인공지능학과
+  college: AI융합대학
+  aliases: [인공지능학]
+  campus: 죽전
+  office: {tel: 031-8005-3257, room: 소프트웨어ICT관 311호}
+  base_url: https://cms.dankook.ac.kr/web/ai
+  description: 인공지능학과(죽전) 공지사항·채용공지·교수·오시는 길
+  sections:
+    notice: {title: 공지사항, path: /web/ai/-41}
+    jobs: {title: 채용공지, path: /web/ai/-43}
+  datasets:
+    professors:
+    - {path: /web/ai/-31}
+  pages:
+    location: {title: 오시는 길, path: /web/ai/-13}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+archi:
+  type: dku_cms
+  kind: department
+  name: 건축학전공·건축공학전공
+  college: 공과대학 건축학부
+  aliases: [건축학전공, 건축공학전공]
+  campus: 죽전
+  office: {tel: '031-8005-3698/3726,3724', room: 제1공학관 412호}
+  base_url: https://cms.dankook.ac.kr/web/archi
+  description: 건축학전공·건축공학전공(죽전) 건축학전공 학사·건축학전공 장학·건축학전공 취창업·건축학전공 외부특강 및 공모전·건축학교육인증·건축학과 대학원 공지·건축공학전공 학사·건축공학과 대학원 공지·교직 공지사항·외부행사 및 공모전·건축공학전공 장학·공학인증·건축공학전공 취창업·학과 소개·교과과정·교수·학부 찾아오시는 길
+  sections:
+    notice: {title: 건축학전공 학사, path: /web/archi/-18}
+    scholarship: {title: 건축학전공 장학, path: /web/archi/-12}
+    jobs: {title: 건축학전공 취창업, path: /web/archi/-13}
+    activity: {title: 건축학전공 외부특강 및 공모전, path: /web/archi/-15}
+    archive: {title: 건축학교육인증, path: /web/archi/-16}
+    grad: {title: 건축학과 대학원 공지, path: /web/archi/-21}
+    notice_2: {title: 건축공학전공 학사, path: /web/archi/-24}
+    grad_2: {title: 건축공학과 대학원 공지, path: /web/archi/-22}
+    notice_3: {title: 교직 공지사항, path: /web/archi/-11}
+    activity_2: {title: 외부행사 및 공모전, path: /web/archi/-32, same_as: activity}
+    scholarship_2: {title: 건축공학전공 장학, path: /web/archi/-31}
+    archive_2: {title: 공학인증, path: /web/archi/-10}
+    jobs_2: {title: 건축공학전공 취창업, path: /web/archi/-25}
+  datasets:
+    dept_info:
+    - {path: /web/archi/-5-p_p_id-deptinfo_war_empinfoportlet-p_p_lifecycle-0-p_p_state-normal-p_p_mode-view-p_p_col_id-column-2-p_p_col_count-1-_deptinfo_war_empinfoportlet_action-view}
+    - {path: /web/archi/-1-p_p_id-deptinfo_war_empinfoportlet-p_p_lifecycle-0-p_p_state-normal-p_p_mode-view-p_p_col_id-column-2-p_p_col_count-1-_deptinfo_war_empinfoportlet_action-view}
+    curriculum:
+    - {path: /web/archi/curriculum1, org: 공과대학}
+    - {path: /web/archi/curriculum2, org: 공과대학 건축학부}
+    - {path: /web/archi/curriculum3, org: 공과대학 건축학부}
+    professors:
+    - {path: /web/archi/professor1}
+    - {path: /web/archi/professor2}
+    - {path: /web/archi/professor3}
+    - {path: /web/archi/-5-p_p_id-deptinfo_war_empinfoportlet-p_p_lifecycle-0-p_p_state-normal-p_p_mode-view-p_p_col_id-column-2-p_p_col_count-1-_deptinfo_war_empinfoportlet_viewno-1-_deptinfo_war_empinfoportlet_action-view}
+  pages:
+    location: {title: 학부 찾아오시는 길, path: /web/archi/contact}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+bahumanities:
+  type: dku_cms
+  kind: department
+  name: 영미인문학과
+  college: 문과대학
+  aliases: [영미인문학]
+  campus: 죽전
+  office: {tel: 031-8005-3060, room: 인문관 308호}
+  base_url: https://cms.dankook.ac.kr/web/bahumanities
+  description: 영미인문학과(죽전) 학과공지사항·대학원 공지사항·취업 · 진로·자료실·교수·학과 소개·교과과정
+  sections:
+    notice: {title: 학과공지사항, path: /web/bahumanities/-10}
+    grad: {title: 대학원 공지사항, path: /web/bahumanities/-11}
+    jobs: {title: 취업 · 진로, path: /web/bahumanities/-16}
+    archive: {title: 자료실, path: /web/bahumanities/-13}
+  datasets:
+    professors:
+    - {path: /web/bahumanities/-1}
+    dept_info:
+    - {path: /web/bahumanities/-7}
+    curriculum:
+    - {path: /web/bahumanities/-2, org: 문과대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+bu:
+  type: dku_cms
+  kind: department
+  name: 경영학전공
+  college: 경영경제대학 경영학부
+  aliases: [경영학]
+  campus: 죽전
+  office: {tel: '031-8005-3440,3423~4', room: 상경관 305호}
+  base_url: https://cms.dankook.ac.kr/web/bu
+  description: 경영학전공(죽전) 학사 공지사항(학부)·취창업 정보마당·장학 공지사항·기타 공지사항·학과동정·학과 소개·교수·교과과정
+  sections:
+    notice: {title: 학사 공지사항(학부), path: /web/bu/-6}
+    jobs: {title: 취창업 정보마당, path: /web/bu/-26}
+    scholarship: {title: 장학 공지사항, path: /web/bu/-14}
+    notice_2: {title: 기타 공지사항, path: /web/bu/-2}
+    activity: {title: 학과동정, path: /web/bu/-22}
+  datasets:
+    dept_info:
+    - {path: /web/bu/-18}
+    professors:
+    - {path: /web/bu/-7}
+    - {path: /web/bu/ba_professor}
+    curriculum:
+    - {path: /web/bu/-15, org: 경영경제대학 경영학부}
+    - {path: /web/bu/교과과정-학부-, org: 경영경제대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+ceramicarts:
+  type: dku_cms
+  kind: department
+  name: 도예과
+  college: 음악·예술대학
+  aliases: [도예]
+  campus: 죽전
+  office: {tel: 031-8005-3088, room: 미술관 304호}
+  base_url: https://cms.dankook.ac.kr/web/ceramicarts
+  description: 도예과(죽전) 학사공지·전시일정·공지사항·자료실·공모전·학과 소개·교과과정·교수·찾아오시는 길
+  sections:
+    notice: {title: 학사공지, path: /web/ceramicarts/-6}
+    activity: {title: 전시일정, path: /web/ceramicarts/-14}
+    notice_2: {title: 공지사항, path: /web/ceramicarts/-4}
+    archive: {title: 자료실, path: /web/ceramicarts/-11}
+    activity_2: {title: 공모전, path: /web/ceramicarts/-5}
+  datasets:
+    dept_info:
+    - {path: /web/ceramicarts/학과소개1}
+    curriculum:
+    - {path: /web/ceramicarts/-1, org: 음악·예술대학}
+    professors:
+    - {path: /web/ceramicarts/-10}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/ceramicarts/-9}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+comm:
+  type: dku_cms
+  kind: department
+  name: 저널리즘전공·영상콘텐츠전공·광고홍보전공
+  college: 사회과학대학 미디어커뮤니케이션학부
+  aliases: [저널리즘전공, 영상콘텐츠전공, 광고홍보전공]
+  campus: 죽전
+  office: {tel: 031-8005-3359, room: 미디어센터 103호}
+  base_url: https://cms.dankook.ac.kr/web/comm
+  description: 저널리즘전공·영상콘텐츠전공·광고홍보전공(죽전) 학사공지·자료실·교수·학과 소개·교과과정·찾아오시는길·학부 장학제도·졸업요건·대학원연계과정
+  sections:
+    notice: {title: 학사공지, path: /web/comm/-10}
+    archive: {title: 자료실, path: /web/comm/-13}
+  datasets:
+    professors:
+    - {path: /web/comm/미디어커뮤니케이션학부}
+    dept_info:
+    - {path: /web/comm/-6}
+    - {path: /web/comm/-7}
+    - {path: /web/comm/-8}
+    curriculum:
+    - {path: /web/comm/-24, org: 사회과학대학}
+    - {path: /web/comm/-27, org: 사회과학대학 미디어커뮤니케이션학부}
+    - {path: /web/comm/-28, org: 사회과학대학 미디어커뮤니케이션학부}
+    - {path: /web/comm/-29, org: 사회과학대학 미디어커뮤니케이션학부}
+  pages:
+    location: {title: 찾아오시는길, path: /web/comm/-18}
+    scholarship: {title: 학부 장학제도, path: /web/comm/장학제도}
+    graduation: {title: 졸업요건, path: /web/comm/-32}
+    grad_bs_ms: {title: 대학원연계과정, path: /web/comm/-33}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+communicationdesign:
+  type: dku_cms
+  kind: department
+  name: 커뮤니케이션디자인전공
+  college: 음악·예술대학 디자인학부
+  aliases: [커뮤니케이션디자인]
+  campus: 죽전
+  office: {tel: 031-8005-3100, room: 미술관 320호}
+  base_url: https://www.dankook.ac.kr/web/communicationdesign
+  description: 커뮤니케이션디자인전공(죽전) 학과 소개·교수·교과과정
+  datasets:
+    dept_info:
+    - {path: /web/communicationdesign/일반소개}
+    professors:
+    - {path: /web/communicationdesign/professor1}
+    - {path: /web/communicationdesign/professor2}
+    curriculum:
+    - {path: /web/communicationdesign/curriculum1, org: 음악·예술대학 디자인학부}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+composition:
+  type: dku_cms
+  kind: department
+  name: 작곡전공
+  college: 음악·예술대학 음악학부
+  aliases: [작곡]
+  campus: 죽전
+  office: {tel: 031-8005-3918, room: 음악관 223호}
+  base_url: https://cms.dankook.ac.kr/web/composition
+  description: 작곡전공(죽전) 교수·교과과정
+  datasets:
+    professors:
+    - {path: /web/composition/professor1}
+    - {path: /web/composition/음악학부}
+    curriculum:
+    - {path: /web/composition/기초과정, org: 음악·예술대학 음악학부}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+counseling:
+  type: dku_cms
+  kind: department
+  name: 상담학과
+  college: 사회과학대학
+  aliases: [상담학]
+  campus: 죽전
+  office: {tel: 031-8005-3360, room: 소프트웨어 ICT관 103호}
+  base_url: https://cms.dankook.ac.kr/web/counseling
+  description: 상담학과(죽전) 공지사항·학과 소식·학과 소개·교수·교과과정
+  sections:
+    notice: {title: 공지사항, path: /web/counseling/notice_c}
+    activity: {title: 학과 소식, path: /web/counseling/data}
+  datasets:
+    dept_info:
+    - {path: /web/counseling/introduce_b-p_p_id-deptinfo_war_empinfoportlet-p_p_lifecycle-0-p_p_state-normal-p_p_mode-view-p_p_col_id-column-2-p_p_col_count-1-_deptinfo_war_empinfoportlet_action-view}
+    professors:
+    - {path: /web/counseling/introduce_b-p_p_id-deptinfo_war_empinfoportlet-p_p_lifecycle-0-p_p_state-normal-p_p_mode-view-p_p_col_id-column-2-p_p_col_count-1-_deptinfo_war_empinfoportlet_viewno-1-_deptinfo_war_empinfoportlet_action-view}
+    curriculum:
+    - {path: /web/counseling/curriculum, org: 사회과학대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+dance:
+  type: dku_cms
+  kind: department
+  name: 무용과
+  college: 음악·예술대학
+  aliases: [무용]
+  campus: 죽전
+  office: {tel: 031-8005-3120, room: 무용관 101호}
+  base_url: https://cms.dankook.ac.kr/web/dance
+  description: 무용과(죽전) 공지사항·학과 소개·교수·교과과정
+  sections:
+    notice: {title: 공지사항, path: /web/dance/-10}
+  datasets:
+    dept_info:
+    - {path: /web/dance/-7}
+    professors:
+    - {path: /web/dance/-15}
+    curriculum:
+    - {path: /web/dance/-23, org: 음악·예술대학}
+    - {path: /web/dance/-24}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+danche:
+  type: dku_cms
+  kind: department
+  name: 체육교육과
+  college: 사범대학
+  aliases: [체육교육]
+  campus: 죽전
+  office: {tel: 031-8005-3855, room: 체육관 109호}
+  base_url: https://cms.dankook.ac.kr/web/danche
+  description: 체육교육과(죽전) 학과 소개·교수·교과과정
+  datasets:
+    dept_info:
+    - {path: /web/danche/-7}
+    professors:
+    - {path: /web/danche/-1}
+    curriculum:
+    - {path: /web/danche/-2, org: 사범대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+dkucee:
+  type: dku_cms
+  kind: department
+  name: 인프라건설공학과·토목환경공학과
+  college: 공과대학
+  aliases: [인프라건설공학과, 토목환경공학과]
+  campus: 죽전
+  office: {tel: 031-8005-3470/3478, room: 제1공학관 214호}
+  base_url: https://cms.dankook.ac.kr/web/dkucee
+  description: 인프라건설공학과·토목환경공학과(죽전) 공지사항·일자리플러스·취업·공모전·참여·학과소식·학과 소개·교수·교과과정
+  sections:
+    notice: {title: 공지사항, path: /web/dkucee/notice}
+    jobs: {title: 일자리플러스, path: /web/dkucee/-44}
+    jobs_2: {title: 취업·공모전·참여, path: /web/dkucee/careers}
+    activity: {title: 학과소식, path: /web/dkucee/community1}
+  datasets:
+    dept_info:
+    - {path: /web/dkucee/-2}
+    professors:
+    - {path: /web/dkucee/professors}
+    curriculum:
+    - {path: /web/dkucee/-21, org: 공과대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+dkupa:
+  type: dku_cms
+  kind: department
+  name: 행정학과
+  college: 사회과학대학
+  aliases: [행정, 행정학]
+  campus: 죽전
+  office: {tel: 031-8005-3294, room: 사회과학관 104호}
+  base_url: https://cms.dankook.ac.kr/web/dkupa
+  description: 행정학과(죽전) 공지사항·고시반·학과 소개·교수·교과과정
+  sections:
+    notice: {title: 공지사항, path: /web/dkupa/-18}
+    jobs: {title: 고시반, path: /web/dkupa/-5}
+  datasets:
+    dept_info:
+    - {path: /web/dkupa/-7}
+    professors:
+    - {path: /web/dkupa/professor}
+    curriculum:
+    - {path: /web/dkupa/-12, org: 사회과학대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+dkustat:
+  type: dku_cms
+  kind: department
+  name: 통계데이터사이언스학과
+  college: AI융합대학
+  aliases: [통계, 통계데이터사이언스학]
+  campus: 죽전
+  office: {tel: 031-8005-3256, room: 소프트웨어 ICT관 311호}
+  base_url: https://cms.dankook.ac.kr/web/dkustat
+  description: 통계데이터사이언스학과(죽전) 학과공지·채용정보/취업정보·학과 소개·교수·교과과정
+  sections:
+    notice: {title: 학과공지, path: /web/dkustat/-6}
+    jobs: {title: 채용정보/취업정보, path: /web/dkustat/-12}
+  datasets:
+    dept_info:
+    - {path: /web/dkustat/-3}
+    professors:
+    - {path: /web/dkustat/-4}
+    curriculum:
+    - {path: /web/dkustat/-5, org: SW융합대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+econ:
+  type: dku_cms
+  kind: department
+  name: 경제학과
+  college: 경영경제대학
+  aliases: [경제, 경제학]
+  campus: 죽전
+  office: {tel: 031-8005-3380, room: 상경관 304호}
+  base_url: https://cms.dankook.ac.kr/web/econ
+  description: 경제학과(죽전) 공지사항·장학 정보·취업 정보·튜터링·대학원 공지·행사 일정·학과 소개·교수·교과과정
+  sections:
+    notice: {title: 공지사항, path: /web/econ/-18}
+    scholarship: {title: 장학 정보, path: /web/econ/-12}
+    jobs: {title: 취업 정보, path: /web/econ/-21}
+    activity: {title: 튜터링, path: /web/econ/-10}
+    grad: {title: 대학원 공지, path: /web/econ/-5}
+    activity_2: {title: 행사 일정, path: /web/econ/-7}
+  datasets:
+    dept_info:
+    - {path: /web/econ/-15-p_p_id-deptinfo_war_empinfoportlet-p_p_lifecycle-0-p_p_state-normal-p_p_mode-view-p_p_col_id-column-2-p_p_col_count-1-_deptinfo_war_empinfoportlet_action-view}
+    professors:
+    - {path: /web/econ/-16}
+    curriculum:
+    - {path: /web/econ/-17, org: 경영경제대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+eee:
+  type: dku_cms
+  kind: department
+  name: 전자전기공학과
+  college: 공과대학
+  aliases: [전자전기공학]
+  campus: 죽전
+  office: {tel: 031-8005-3626/3601, room: 제2공학관 215호}
+  base_url: https://cms.dankook.ac.kr/web/eee
+  description: 전자전기공학과(죽전) 학과공지·대학원 공지·취업정보·교수·학과 소개·교과과정·장학제도·찾아오시는 길·대학원 연구실 소개
+  sections:
+    notice: {title: 학과공지, path: /web/eee/-51}
+    grad: {title: 대학원 공지, path: /web/eee/-52}
+    jobs: {title: 취업정보, path: /web/eee/-53}
+  datasets:
+    professors:
+    - {path: /web/eee/-9}
+    dept_info:
+    - {path: /web/eee/-29}
+    curriculum:
+    - {path: /web/eee/-40, org: 공과대학}
+  pages:
+    scholarship: {title: 장학제도, path: /web/eee/-25}
+    location: {title: 찾아오시는 길, path: /web/eee/-27}
+    grad_labs: {title: 대학원 연구실 소개, path: /web/eee/-47}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+fashion:
+  type: dku_cms
+  kind: department
+  name: 패션산업디자인전공
+  college: 음악·예술대학 디자인학부
+  aliases: [패션산업디자인]
+  campus: 죽전
+  office: {tel: 031-8005-3130, room: 미술관 406호}
+  base_url: https://cms.dankook.ac.kr/web/fashion
+  description: 패션산업디자인전공(죽전) 학과 소개·교과과정·교수
+  datasets:
+    dept_info:
+    - {path: /web/fashion/학과소개1}
+    curriculum:
+    - {path: /web/fashion/교과과정1, org: 음악·예술대학 디자인학부}
+    professors:
+    - {path: /web/fashion/패션산업디자인전공-교수}
+    - {path: /web/fashion/디자인학부-교수}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+fiber:
+  type: dku_cms
+  kind: department
+  name: 융합소재공학전공·파이버융합소재공학전공
+  college: 공과대학 고분자시스템공학부
+  aliases: [융합소재공학전공, 파이버융합소재공학전공]
+  campus: 죽전
+  office: {tel: 031-8005-3560, room: 제3공학관 306호}
+  base_url: https://cms.dankook.ac.kr/web/fiber
+  description: 융합소재공학전공·파이버융합소재공학전공(죽전) 학부 공지사항·대학원 공지사항·채용정보/행사/특강·자료실·학과 소개·교수·교과과정
+  sections:
+    notice: {title: 학부 공지사항, path: /web/fiber/-16}
+    grad: {title: 대학원 공지사항, path: /web/fiber/-10}
+    jobs: {title: 채용정보/행사/특강, path: /web/fiber/-22}
+    archive: {title: 자료실, path: /web/fiber/-20}
+  datasets:
+    dept_info:
+    - {path: /web/fiber/-2}
+    professors:
+    - {path: /web/fiber/-23}
+    - {path: /web/fiber/고분자시스템공학부}
+    curriculum:
+    - {path: /web/fiber/-9, org: 공과대학 고분자시스템공학부}
+    - {path: /web/fiber/교과과정표-학부-, org: 공과대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+hankyo:
+  type: dku_cms
+  kind: department
+  name: 한문교육과
+  college: 사범대학
+  aliases: [한문교육]
+  campus: 죽전
+  office: {tel: 031-8005-3790, room: 사범관 318호}
+  base_url: https://cms.dankook.ac.kr/web/hankyo
+  description: 한문교육과(죽전) 학과공지사항·원전자료·임용자료·학과 소개·교과과정·교수·오시는길
+  sections:
+    notice: {title: 학과공지사항, path: /web/hankyo/-10}
+    archive: {title: 원전자료, path: /web/hankyo/-21}
+    archive_2: {title: 임용자료, path: /web/hankyo/-33}
+  datasets:
+    dept_info:
+    - {path: /web/hankyo/-9}
+    curriculum:
+    - {path: /web/hankyo/-7, org: 사범대학}
+    professors:
+    - {path: /web/hankyo/-1}
+  pages:
+    location: {title: 오시는길, path: /web/hankyo/-19}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+history:
+  type: dku_cms
+  kind: department
+  name: 사학과
+  college: 문과대학
+  aliases: [사학]
+  campus: 죽전
+  office: {tel: 031-8005-3030, room: 인문관 507호}
+  base_url: https://cms.dankook.ac.kr/web/history
+  description: 사학과(죽전) 공지사항·학과소식·자료실·대학원 공지사항·대학원 자료실·학과 소개·교수·교과과정
+  sections:
+    notice: {title: 공지사항, path: /web/history/-10}
+    activity: {title: 학과소식, path: /web/history/-21}
+    archive: {title: 자료실, path: /web/history/-13}
+    grad: {title: 대학원 공지사항, path: /web/history/-17}
+    grad_2: {title: 대학원 자료실, path: /web/history/-18}
+  datasets:
+    dept_info:
+    - {path: /web/history/-7}
+    professors:
+    - {path: /web/history/-7-p_p_id-deptinfo_war_empinfoportlet-p_p_lifecycle-0-p_p_state-normal-p_p_mode-view-p_p_col_id-column-2-p_p_col_count-1-_deptinfo_war_empinfoportlet_viewno-1-_deptinfo_war_empinfoportlet_action-view}
+    curriculum:
+    - {path: /web/history/-19, org: 문과대학}
+    - {path: /web/history/-16, org: 대학원}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+ib:
+  type: dku_cms
+  kind: department
+  name: 국제경영학과
+  college: 프리무스국제대학
+  aliases: [국제경영학]
+  campus: 죽전
+  office: {tel: 031-8005-3374, room: 국제관 302호}
+  base_url: https://cms.dankook.ac.kr/web/ib
+  description: 국제경영학과(죽전) Notices·Career Opportunities·Additional Information·학과 소개·교수·교과과정
+  sections:
+    notice: {title: Notices, path: /web/ib/notices}
+    jobs: {title: Career Opportunities, path: /web/ib/career-opportunities}
+    activity: {title: Additional Information, path: /web/ib/기타정보}
+  datasets:
+    dept_info:
+    - {path: /web/ib/-3}
+    professors:
+    - {path: /web/ib/professor}
+    curriculum:
+    - {path: /web/ib/-1, org: 프리무스국제대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+indsec:
+  type: dku_cms
+  kind: department
+  name: 사이버보안학과
+  college: AI융합대학
+  aliases: [사이버보안, 사이버보안학]
+  campus: 죽전
+  office: {tel: 031-8005-3190, room: 소프트ICT관 311호}
+  base_url: https://cms.dankook.ac.kr/web/indsec
+  description: 사이버보안학과(죽전) 공지사항·세미나 (특강)·장학·취업 정보·졸업·학과 소개·교수·교과과정·소프트웨어보안 연구실·지능형 보안 연구실·융합 시스템 보안 연구실·정보보안 연구실·암호 및 데이터 보안 연구실·지능형 교통 시스템보안 연구실
+  sections:
+    notice: {title: 공지사항, path: /web/indsec/-4}
+    activity: {title: 세미나 (특강), path: /web/indsec/-5}
+    scholarship: {title: 장학, path: /web/indsec/-22}
+    jobs: {title: 취업 정보, path: /web/indsec/-12}
+    rules: {title: 졸업, path: /web/indsec/-9}
+  datasets:
+    dept_info:
+    - {path: /web/indsec/-6}
+    professors:
+    - {path: /web/indsec/-23}
+    curriculum:
+    - {path: /web/indsec/-16, org: SW융합대학}
+  pages:
+    labs: {title: 소프트웨어보안 연구실, path: /web/indsec/-17}
+    labs_2: {title: 지능형 보안 연구실, path: /web/indsec/-19}
+    labs_3: {title: 융합 시스템 보안 연구실, path: /web/indsec/-20}
+    labs_4: {title: 정보보안 연구실, path: /web/indsec/-18}
+    labs_5: {title: 암호 및 데이터 보안 연구실, path: /web/indsec/-21}
+    labs_6: {title: 지능형 교통 시스템보안 연구실, path: /web/indsec/지능형-교통-시스템보안-연구실}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+industrialm:
+  type: dku_cms
+  kind: department
+  name: 산업경영학과(야)
+  college: 경영경제대학
+  aliases: []
+  campus: 죽전
+  office: {tel: 031-8005-3408, room: 상경관 305호}
+  base_url: https://cms.dankook.ac.kr/web/industrialm
+  description: 산업경영학과(야)(죽전) 공지사항·특성화고졸재직자전형 안내·교과과정·교수·학과 소개
+  sections:
+    notice: {title: 공지사항, path: /web/industrialm/-4}
+    notice_2: {title: 특성화고졸재직자전형 안내, path: /web/industrialm/-10}
+  datasets:
+    curriculum:
+    - {path: /web/industrialm/-1-1, org: 경영경제대학}
+    professors:
+    - {path: /web/industrialm/-2}
+    dept_info:
+    - {path: /web/industrialm/-8}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+koreamusic:
+  type: dku_cms
+  kind: department
+  name: 국악전공
+  college: 음악·예술대학 음악학부
+  aliases: [국악]
+  campus: 죽전
+  office: {tel: 031-8005-3926, room: 음악관 223호}
+  base_url: https://cms.dankook.ac.kr/web/koreamusic
+  description: 국악전공(죽전) 학과 소개·교수·교과과정·오시는 길
+  datasets:
+    dept_info:
+    - {path: /web/koreamusic/전공소개}
+    professors:
+    - {path: /web/koreamusic/professor1}
+    - {path: /web/koreamusic/음악학부}
+    curriculum:
+    - {path: /web/koreamusic/curriculum, org: 음악·예술대학 음악학부}
+  pages:
+    location: {title: 오시는 길, path: /web/koreamusic/찾아오시는-길}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+koreanlitnlang:
+  type: dku_cms
+  kind: department
+  name: 국어국문학과
+  college: 문과대학
+  aliases: [국문과, 국어국문학]
+  campus: 죽전
+  office: {tel: 031-8005-3020, room: 인문관 506호}
+  base_url: https://cms.dankook.ac.kr/web/koreanlitnlang
+  description: 국어국문학과(죽전) 대학원공지·학과 공지사항·학과 소식·학과 소개·교수·교과과정·대학원 내규
+  sections:
+    grad: {title: 대학원공지, path: /web/koreanlitnlang/-9}
+    notice: {title: 학과 공지사항, path: /web/koreanlitnlang/-7}
+    activity: {title: 학과 소식, path: /web/koreanlitnlang/-14}
+  datasets:
+    dept_info:
+    - {path: /web/koreanlitnlang/-6}
+    professors:
+    - {path: /web/koreanlitnlang/-2}
+    curriculum:
+    - {path: /web/koreanlitnlang/-3, org: 문과대학}
+    - {path: /web/koreanlitnlang/-30, org: 대학원}
+  pages:
+    grad_rules: {title: 대학원 내규, path: /web/koreanlitnlang/-28}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+law:
+  type: dku_cms
+  kind: department
+  name: 법학과
+  college: 법과대학
+  aliases: [법대, 법학]
+  campus: 죽전
+  office: {tel: 031-8005-3273/3278, room: 법학관 328호}
+  base_url: https://law.dankook.ac.kr/web/law
+  description: 법학과(죽전) 법과대학 공지·법과대학 뉴스
+  sections:
+    notice: {title: 법과대학 공지, path: /web/law/-9}
+    activity: {title: 법과대학 뉴스, path: /web/law/-45}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+mathedu:
+  type: dku_cms
+  kind: department
+  name: 수학교육과
+  college: 사범대학
+  aliases: [수학교육]
+  campus: 죽전
+  office: {tel: 031-8005-3828, room: 사범관 417호}
+  base_url: https://cms.dankook.ac.kr/web/mathedu
+  description: 수학교육과(죽전) 학과 공지사항·서식자료·학과 소개·교수·교과과정·찾아오시는 길
+  sections:
+    notice: {title: 학과 공지사항, path: /web/mathedu/-10}
+    archive: {title: 서식자료, path: /web/mathedu/-5}
+  datasets:
+    dept_info:
+    - {path: /web/mathedu/-18}
+    professors:
+    - {path: /web/mathedu/-31}
+    curriculum:
+    - {path: /web/mathedu/-32, org: 사범대학}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/mathedu/-4}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+me:
+  type: dku_cms
+  kind: department
+  name: 기계공학과
+  college: 공과대학
+  aliases: [기계과, 기계공학]
+  campus: 죽전
+  office: {tel: 031-8005-3497, room: 제1공학관 517호}
+  base_url: https://cms.dankook.ac.kr/web/me
+  description: 기계공학과(죽전) 학과 공지·학부자료실·대학원 공지·학과소식·취업정보·외부행사,경진대회·대학원자료실·서식자료실·학과 소개·교수·교과과정
+  sections:
+    notice: {title: 학과 공지, path: /web/me/-79}
+    archive: {title: 학부자료실, path: /web/me/q-a-1}
+    grad: {title: 대학원 공지, path: /web/me/-35}
+    activity: {title: 학과소식, path: /web/me/-11}
+    jobs: {title: 취업정보, path: /web/me/q-a}
+    activity_2: {title: '외부행사,경진대회', path: /web/me/-82}
+    grad_2: {title: 대학원자료실, path: /web/me/-42}
+    archive_2: {title: 서식자료실, path: /web/me/-43}
+  datasets:
+    dept_info:
+    - {path: /web/me/-26}
+    - {path: /web/me/대학원소개, org: 대학원}
+    professors:
+    - {path: /web/me/-15}
+    curriculum:
+    - {path: /web/me/-84, org: 공과대학}
+    - {path: /web/me/-23, org: 대학원}
+    - {path: /web/me/-61, org: 대학원}
+    - {path: /web/me/-62, org: 대학원}
+    - {path: /web/me/-64, org: 대학원}
+    - {path: /web/me/-63, org: 대학원}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+orchestral-instrument:
+  type: dku_cms
+  kind: department
+  name: 관현악전공
+  college: 음악·예술대학 음악학부
+  aliases: [관현악]
+  campus: 죽전
+  office: {tel: 031-8005-3891, room: 음악관 223호}
+  base_url: https://cms.dankook.ac.kr/web/orchestral-instrument
+  description: 관현악전공(죽전) 학과 소개·교수·교과과정
+  datasets:
+    dept_info:
+    - {path: /web/orchestral-instrument/일반소개}
+    professors:
+    - {path: /web/orchestral-instrument/professor1}
+    - {path: /web/orchestral-instrument/음악학부}
+    curriculum:
+    - {path: /web/orchestral-instrument/교과과정1, org: 음악·예술대학 음악학부}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+performance-film:
+  type: dku_cms
+  kind: department
+  name: 연극전공·영화전공·뮤지컬전공
+  college: 음악·예술대학 공연영화학부
+  aliases: [연극전공, 영화전공, 뮤지컬전공]
+  campus: 죽전
+  office: {tel: 031-8005-3110, room: 체육관 B220호}
+  base_url: https://cms.dankook.ac.kr/web/performance-film
+  description: 연극전공·영화전공·뮤지컬전공(죽전) 학과 소개·교수·교과과정·찾아오시는 길
+  datasets:
+    dept_info:
+    - {path: /web/performance-film/연극전공1}
+    - {path: /web/performance-film/영화전공1}
+    - {path: /web/performance-film/뮤지컬전공2}
+    professors:
+    - {path: /web/performance-film/공연영화학부}
+    - {path: /web/performance-film/연극전공}
+    - {path: /web/performance-film/영화전공}
+    - {path: /web/performance-film/뮤지컬전공}
+    curriculum:
+    - {path: /web/performance-film/curriculum1, org: 음악·예술대학 공연영화학부}
+    - {path: /web/performance-film/curriculum2, org: 음악·예술대학 공연영화학부}
+    - {path: /web/performance-film/curriculum3, org: 음악·예술대학 공연영화학부}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/performance-film/찾아오시는-길}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+philosophy:
+  type: dku_cms
+  kind: department
+  name: 철학과
+  college: 문과대학
+  aliases: [철학]
+  campus: 죽전
+  office: {tel: 031-8005-3039, room: 인문관 308호}
+  base_url: https://cms.dankook.ac.kr/web/philosophy
+  description: 철학과(죽전) 융합철학워크숍·공지사항·학과 소개·교수·교과과정
+  sections:
+    activity: {title: 융합철학워크숍, path: /web/philosophy/-24}
+    notice: {title: 공지사항, path: /web/philosophy/-10}
+  datasets:
+    dept_info:
+    - {path: /web/philosophy/-7}
+    professors:
+    - {path: /web/philosophy/-1}
+    curriculum:
+    - {path: /web/philosophy/-2, org: 문과대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+piano:
+  type: dku_cms
+  kind: department
+  name: 피아노전공
+  college: 음악·예술대학 음악학부
+  aliases: [피아노]
+  campus: 죽전
+  office: {tel: 031-8005-3890, room: 음악관 223호}
+  base_url: https://cms.dankook.ac.kr/web/piano
+  description: 피아노전공(죽전) 교수·교과과정
+  datasets:
+    professors:
+    - {path: /web/piano/피아노전공}
+    - {path: /web/piano/음악학부}
+    curriculum:
+    - {path: /web/piano/교과과정, org: 음악·예술대학 음악학부}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+polisci:
+  type: dku_cms
+  kind: department
+  name: 정치외교학과
+  college: 사회과학대학
+  aliases: [정외과, 정치외교학]
+  campus: 죽전
+  office: {tel: 031-8005-3313, room: 사회과학관 103호}
+  base_url: https://cms.dankook.ac.kr/web/polisci
+  description: 정치외교학과(죽전) 교수동정·재학생·학과 소개·교과과정·교수·문의 및 위치안내
+  sections:
+    activity: {title: 교수동정, path: /web/polisci/-37}
+    activity_2: {title: 재학생, path: /web/polisci/-36}
+  datasets:
+    dept_info:
+    - {path: /web/polisci/-7}
+    curriculum:
+    - {path: /web/polisci/-9, org: 사회과학대학}
+    professors:
+    - {path: /web/polisci/-34}
+  pages:
+    location: {title: 문의 및 위치안내, path: /web/polisci/찾아오시는-길}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+polymer:
+  type: dku_cms
+  kind: department
+  name: 고분자공학전공
+  college: 공과대학 고분자시스템공학부
+  aliases: [고분자공학]
+  campus: 죽전
+  office: {tel: 031-8005-3580/3591, room: 제3공학관 406호}
+  base_url: https://cms.dankook.ac.kr/web/polymer
+  description: 고분자공학전공(죽전) 학부 공지·대학원 공지·채용공고·교외활동·자료실·학과 소식·교수·교과과정·찾아오시는 길
+  sections:
+    notice: {title: 학부 공지, path: /web/polymer/-67}
+    grad: {title: 대학원 공지, path: /web/polymer/-5}
+    jobs: {title: 채용공고, path: /web/polymer/-1}
+    activity: {title: 교외활동, path: /web/polymer/-4}
+    archive: {title: 자료실, path: /web/polymer/-8}
+    activity_2: {title: 학과 소식, path: /web/polymer/학과-소식}
+  datasets:
+    professors:
+    - {path: /web/polymer/-16}
+    - {path: /web/polymer/고분자시스템공학부}
+    curriculum:
+    - {path: /web/polymer/curriculum2, org: 공과대학}
+    - {path: /web/polymer/curriculum1, org: 공과대학 고분자시스템공학부}
+    - {path: /web/polymer/-70}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/polymer/-41}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+sce:
+  type: dku_cms
+  kind: department
+  name: 융합반도체공학과
+  college: 공과대학
+  aliases: [융합반도체공학]
+  campus: 죽전
+  office: {tel: 031-8005-3626/3601, room: 제2공학관 215호}
+  base_url: https://cms.dankook.ac.kr/web/sce
+  description: 융합반도체공학과(죽전) 공지사항·취업정보·교수·학과 소개·교과과정·찾아오시는 길
+  sections:
+    notice: {title: 공지사항, path: /web/sce/-1}
+    jobs: {title: 취업정보, path: /web/sce/-4}
+  datasets:
+    professors:
+    - {path: /web/sce/-8}
+    dept_info:
+    - {path: /web/sce/-6}
+    curriculum:
+    - {path: /web/sce/-7, org: 공과대학}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/sce/-9}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+sciedu:
+  type: dku_cms
+  kind: department
+  name: 과학교육과
+  college: 사범대학
+  aliases: [과학교육]
+  campus: 죽전
+  office: {tel: 031-8005-3840, room: 사범관 414호}
+  base_url: https://cms.dankook.ac.kr/web/sciedu
+  description: 과학교육과(죽전) 안내 및 공지사항·교원 및 강사 구인·자료실·비교과 홍보 게시판·학과 소개·교수·교과과정·오시는 길
+  sections:
+    notice: {title: 안내 및 공지사항, path: /web/sciedu/학부-공지사항}
+    jobs: {title: 교원 및 강사 구인, path: /web/sciedu/q-a-}
+    archive: {title: 자료실, path: /web/sciedu/자료실}
+    activity: {title: 비교과 홍보 게시판, path: /web/sciedu/-10}
+  datasets:
+    dept_info:
+    - {path: /web/sciedu/-7}
+    professors:
+    - {path: /web/sciedu/-6}
+    curriculum:
+    - {path: /web/sciedu/-14, org: 사범대학}
+    - {path: /web/sciedu/-8}
+    - {path: /web/sciedu/-9}
+  pages:
+    location: {title: 오시는 길, path: /web/sciedu/-16}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+specialedu:
+  type: dku_cms
+  kind: department
+  name: 특수교육과
+  college: 사범대학
+  aliases: [특수교육]
+  campus: 죽전
+  office: {tel: 031-8005-3802, room: 사범관 321호}
+  base_url: https://cms.dankook.ac.kr/web/specialedu
+  description: 특수교육과(죽전) 학과 소개·교수·교과과정·찾아오시는 길
+  datasets:
+    dept_info:
+    - {path: /web/specialedu/일반소개}
+    professors:
+    - {path: /web/specialedu/교수소개}
+    curriculum:
+    - {path: /web/specialedu/curriculum1, org: 사범대학}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/specialedu/찾아오시는-길}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+swcon:
+  type: dku_cms
+  kind: department
+  name: SW융합학부
+  college: AI융합대학
+  aliases: [SW융합학]
+  campus: 죽전
+  office: {tel: 031-8005-3143, room: 소프트웨어ICT관 311호}
+  base_url: https://cms.dankook.ac.kr/web/swcon
+  description: SW융합학부(죽전) 모집안내·학부공지·대외활동공지·학사관련 FAQ·자료실·채용정보·교수·학부 찾아오시는 길
+  sections:
+    notice: {title: 모집안내, path: /web/swcon/-7}
+    notice_2: {title: 학부공지, path: /web/swcon/-6}
+    activity: {title: 대외활동공지, path: /web/swcon/-13}
+    archive: {title: 학사관련 FAQ, path: /web/swcon/-q-a}
+    archive_2: {title: 자료실, path: /web/swcon/-12}
+    jobs: {title: 채용정보, path: /web/swcon/-14}
+  datasets:
+    professors:
+    - {path: /web/swcon/-11}
+  pages:
+    location: {title: 학부 찾아오시는 길, path: /web/swcon/찾아오시는-길}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+teachertraining:
+  type: dku_cms
+  kind: department
+  name: 교직교육과
+  college: 사범대학
+  aliases: [교직교육]
+  campus: 죽전
+  office: {tel: 031-8005-3801, room: 사범관 411호}
+  base_url: https://dankook.ac.kr/web/teachertraining
+  description: 교직교육과(죽전) 교수
+  datasets:
+    professors:
+    - {path: /web/teachertraining/-7}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+trade:
+  type: dku_cms
+  kind: department
+  name: 무역학과
+  college: 경영경제대학
+  aliases: [무역학]
+  campus: 죽전
+  office: {tel: 031-8005-3394, room: 상경관 304호}
+  base_url: https://cms.dankook.ac.kr/web/trade
+  description: 무역학과(죽전) 공지사항·취업정보·무역학과 대외활동·학사제도 변경점·장학금 공지·학과 소개·교수·교과과정
+  sections:
+    notice: {title: 공지사항, path: /web/trade/-5}
+    jobs: {title: 취업정보, path: /web/trade/-6}
+    activity: {title: 무역학과 대외활동, path: /web/trade/-8}
+    notice_2: {title: 학사제도 변경점, path: /web/trade/-12}
+    scholarship: {title: 장학금 공지, path: /web/trade/-9}
+  datasets:
+    dept_info:
+    - {path: /web/trade/-13}
+    professors:
+    - {path: /web/trade/-3}
+    curriculum:
+    - {path: /web/trade/-11, org: 경영경제대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+urban-real:
+  type: dku_cms
+  kind: department
+  name: 도시지역계획학전공·부동산학전공
+  college: 사회과학대학 도시계획·부동산학부
+  aliases: [도시지역계획학전공, 부동산학전공]
+  campus: 죽전
+  office: {tel: 031-8005-3323, room: 사회과학관 306호}
+  base_url: https://cms.dankook.ac.kr/web/urban-real
+  description: 도시지역계획학전공·부동산학전공(죽전) 공지사항·공모전 수상·취업정보·현직자 초청 특강·학과 소개·교수·교과과정
+  sections:
+    notice: {title: 공지사항, path: /web/urban-real/-7}
+    activity: {title: 공모전 수상, path: /web/urban-real/-_new}
+    jobs: {title: 취업정보, path: /web/urban-real/-8}
+    activity_2: {title: 현직자 초청 특강, path: /web/urban-real/-13}
+  datasets:
+    dept_info:
+    - {path: /web/urban-real/-11}
+    - {path: /web/urban-real/-12}
+    professors:
+    - {path: /web/urban-real/-5}
+    curriculum:
+    - {path: /web/urban-real/학부}
+    - {path: /web/urban-real/-22, org: 사회과학대학 도시계획·부동산학부}
+    - {path: /web/urban-real/-23, org: 사회과학대학 도시계획·부동산학부}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+vocalmusic:
+  type: dku_cms
+  kind: department
+  name: 성악전공
+  college: 음악·예술대학 음악학부
+  aliases: [성악]
+  campus: 죽전
+  office: {tel: 031-8005-3908, room: 음악관 223호}
+  base_url: https://cms.dankook.ac.kr/web/vocalmusic
+  description: 성악전공(죽전) 교수·교과과정·찾아오시는 길
+  datasets:
+    professors:
+    - {path: /web/vocalmusic/-1}
+    - {path: /web/vocalmusic/음악학부}
+    curriculum:
+    - {path: /web/vocalmusic/-2, org: 음악·예술대학 음악학부}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/vocalmusic/찾아오시는-길}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+animal:
+  type: dku_cms
+  kind: department
+  name: 동물생명공학전공
+  college: 바이오융합대학 생명공학부
+  aliases: [동물생명공학]
+  campus: 천안
+  office: {tel: 041-550-3650, room: 생명자원과학관 206호}
+  base_url: https://cms.dankook.ac.kr/web/animal
+  description: 동물생명공학전공(천안) 학과 소개·찾아오시는 길
+  datasets:
+    dept_info:
+    - {path: /web/animal/-7}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/animal/-6}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+biology:
+  type: dku_cms
+  kind: department
+  name: 생명과학전공
+  college: 바이오융합대학 의생명과학부
+  aliases: [생명과학]
+  campus: 천안
+  office: {tel: 041-550-3440, room: 제1과학관 401-1호}
+  base_url: https://cms.dankook.ac.kr/web/biology
+  description: 생명과학전공(천안) 공지사항·홍보게시판·학과 소개·교수·교과과정·찾아오시는 길
+  sections:
+    notice: {title: 공지사항, path: /web/biology/-10}
+    activity: {title: 홍보게시판, path: /web/biology/-6}
+  datasets:
+    dept_info:
+    - {path: /web/biology/일반소개}
+    professors:
+    - {path: /web/biology/-professor}
+    - {path: /web/biology/-professor1}
+    curriculum:
+    - {path: /web/biology/교과과정, org: 바이오융합대학 의생명과학부}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/biology/-17}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+biomedical:
+  type: dku_cms
+  kind: department
+  name: 임상병리학과
+  college: 보건과학대학
+  aliases: [임상병리학]
+  campus: 천안
+  office: {tel: 041-550-1450, room: 보건과학관 101호}
+  base_url: https://cms.dankook.ac.kr/web/biomedical
+  description: 임상병리학과(천안) 학과 소개·교수·교과과정
+  datasets:
+    dept_info:
+    - {path: /web/biomedical/-3}
+    professors:
+    - {path: /web/biomedical/교수소개}
+    curriculum:
+    - {path: /web/biomedical/학사일정, org: 보건과학대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+biomedical20:
+  type: dku_cms
+  kind: department
+  name: 의생명시스템학전공
+  college: 바이오융합대학 의생명과학부
+  aliases: [의생명시스템학]
+  campus: 천안
+  office: {tel: 041-550-3670, room: 생명자원과학대학 207호}
+  base_url: https://cms.dankook.ac.kr/web/biomedical20
+  description: 의생명시스템학전공(천안) 공지사항·교수·교과과정
+  sections:
+    notice: {title: 공지사항, path: /web/biomedical20/-4}
+  datasets:
+    professors:
+    - {path: /web/biomedical20/-professor}
+    - {path: /web/biomedical20/-professor1}
+    curriculum:
+    - {path: /web/biomedical20/-5, org: 바이오융합대학 의생명과학부}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+chemistry:
+  type: dku_cms
+  kind: department
+  name: 화학과
+  college: 과학기술대학
+  aliases: [화학]
+  campus: 천안
+  office: {tel: 041-550-3430, room: 자연과학1관 225호}
+  base_url: https://cms.dankook.ac.kr/web/chemistry
+  description: 화학과(천안) 학부 공지사항·대학원 공지사항·자료실·학과 소개·교수·교과과정·찾아오시는 길
+  sections:
+    notice: {title: 학부 공지사항, path: /web/chemistry/-1}
+    grad: {title: 대학원 공지사항, path: /web/chemistry/-4}
+    archive: {title: 자료실, path: /web/chemistry/-15}
+  datasets:
+    dept_info:
+    - {path: /web/chemistry/-8}
+    professors:
+    - {path: /web/chemistry/-10}
+    curriculum:
+    - {path: /web/chemistry/-12, org: 과학기술대학}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/chemistry/찾아오시는-길}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+china:
+  type: dku_cms
+  kind: department
+  name: 중국학전공
+  college: 외국어대학 아시아중동학부
+  aliases: [중국학]
+  campus: 천안
+  office: {tel: 041-550-3170, room: 인문과학관 330호}
+  base_url: https://cms.dankook.ac.kr/web/china
+  description: 중국학전공(천안) 공지사항·학과 소개·교과과정·교수·졸업후 진로·찾아오시는 길
+  sections:
+    notice: {title: 공지사항, path: /web/china/-10}
+  datasets:
+    dept_info:
+    - {path: /web/china/-7}
+    curriculum:
+    - {path: /web/china/curriculum-china, org: 외국어대학 아시아중동학부}
+    - {path: /web/china/학부, org: 외국어대학}
+    professors:
+    - {path: /web/china/-16}
+    - {path: /web/china/-professor}
+  pages:
+    career: {title: 졸업후 진로, path: /web/china/-14}
+    location: {title: 찾아오시는 길, path: /web/china/-3}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+cosmedmaterials:
+  type: dku_cms
+  kind: department
+  name: 코스메디컬소재학과
+  college: 바이오융합대학
+  aliases: [코스메디컬소재학]
+  campus: 천안
+  office: {tel: 041-550-3480, room: 제1 과학관 401-01호}
+  base_url: https://cms.dankook.ac.kr/web/cosmedmaterials
+  description: 코스메디컬소재학과(천안) 공지사항·학과 소개·교과과정·찾아오시는 길
+  sections:
+    notice: {title: 공지사항, path: /web/cosmedmaterials/affairs}
+  datasets:
+    dept_info:
+    - {path: /web/cosmedmaterials/about}
+    - {path: /web/cosmedmaterials/학과소개}
+    curriculum:
+    - {path: /web/cosmedmaterials/department, org: 바이오융합대학}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/cosmedmaterials/찾아오시는-길}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+craft:
+  type: dku_cms
+  kind: department
+  name: 공예전공
+  college: 예술대학 미술학부
+  aliases: [공예]
+  campus: 천안
+  office: {tel: '041-550-3740, 3749', room: 예술관 A동 310호 공예과 사무실}
+  base_url: https://cms.dankook.ac.kr/web/craft
+  description: 공예전공(천안) 학과공지·학과 소개·교수·교과과정·찾아오시는 길
+  sections:
+    notice: {title: 학과공지, path: /web/craft/-10}
+  datasets:
+    dept_info:
+    - {path: /web/craft/-7}
+    professors:
+    - {path: /web/craft/-professor}
+    - {path: /web/craft/-professor1}
+    curriculum:
+    - {path: /web/craft/-2, org: 예술대학 미술학부}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/craft/-15}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+crops:
+  type: dku_cms
+  kind: department
+  name: 식량생명공학전공
+  college: 바이오융합대학 생명공학부
+  aliases: [식량생명공학]
+  campus: 천안
+  office: {tel: 041-550-3620, room: 생명공학대학 206호}
+  base_url: https://cms.dankook.ac.kr/web/crops
+  description: 식량생명공학전공(천안) 공지사항·학과 소개·교수
+  sections:
+    notice: {title: 공지사항, path: /web/crops/-10}
+  datasets:
+    dept_info:
+    - {path: /web/crops/-7}
+    professors:
+    - {path: /web/crops/-professor}
+    - {path: /web/crops/-professor1}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+dentalhygiene:
+  type: dku_cms
+  kind: department
+  name: 치위생학과
+  college: 보건과학대학
+  aliases: [치위생학]
+  campus: 천안
+  office: {tel: 041-550-1490, room: 보건과학관 101호}
+  base_url: https://cms.dankook.ac.kr/web/dentalhygiene
+  description: 치위생학과(천안) 공지사항·치위생학과 소식·실습현황·취업정보·학과 소개·교수·교과과정·찾아오시는 길
+  sections:
+    notice: {title: 공지사항, path: /web/dentalhygiene/-4}
+    activity: {title: 치위생학과 소식, path: /web/dentalhygiene/-19}
+    activity_2: {title: 실습현황, path: /web/dentalhygiene/-17}
+    jobs: {title: 취업정보, path: /web/dentalhygiene/-18}
+  datasets:
+    dept_info:
+    - {path: /web/dentalhygiene/-5}
+    professors:
+    - {path: /web/dentalhygiene/-6}
+    curriculum:
+    - {path: /web/dentalhygiene/교육과정로드맵, org: 보건과학대학}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/dentalhygiene/-16}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+dentistry:
+  type: dku_cms
+  kind: department
+  name: 치의예과·치의학과
+  college: 치과대학
+  aliases: [치의예과, 치의학과]
+  campus: 천안
+  office: {tel: 041-550-1910, room: 치과대학 107호}
+  base_url: https://cms.dankook.ac.kr/web/dentistry
+  description: 치의예과·치의학과(천안) 학사공지·장학공지·입학전형·공지사항·새소식·치과대학 연구동향·치과대학소식·언론홍보·학과 소개·교수·교과과정·오시는길
+  sections:
+    notice: {title: 학사공지, path: /web/dentistry/-9}
+    scholarship: {title: 장학공지, path: /web/dentistry/-17}
+    archive: {title: 입학전형, path: /web/dentistry/-q-a}
+    notice_2: {title: 공지사항, path: /web/dentistry/-33}
+    activity: {title: 새소식, path: /web/dentistry/-66}
+    activity_2: {title: 치과대학 연구동향, path: /web/dentistry/-28}
+    activity_3: {title: 치과대학소식, path: /web/dentistry/-8}
+    activity_4: {title: 언론홍보, path: /web/dentistry/-34}
+  datasets:
+    dept_info:
+    - {path: /web/dentistry/전체대학-목록}
+    - {path: /web/dentistry/-3}
+    - {path: /web/dentistry/-4}
+    professors:
+    - {path: /web/dentistry/치의예과1}
+    - {path: /web/dentistry/치의학과1}
+    curriculum:
+    - {path: /web/dentistry/-35, org: 치과대학}
+    - {path: /web/dentistry/-36, org: 치과대학}
+  pages:
+    location: {title: 오시는길, path: /web/dentistry/-12}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+dkcw:
+  type: dku_cms
+  kind: department
+  name: 문예창작과
+  college: 예술대학
+  aliases: [문예창작]
+  campus: 천안
+  office: {tel: 041-550-3770, room: 예술관 D동 208호}
+  base_url: https://cms.dankook.ac.kr/web/dkcw
+  description: 문예창작과(천안) 학과 소개·교수·교과과정
+  datasets:
+    dept_info:
+    - {path: /web/dkcw/일반소개}
+    professors:
+    - {path: /web/dkcw/교수소개}
+    curriculum:
+    - {path: /web/dkcw/교과과정, org: 예술대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+dkfrance:
+  type: dku_cms
+  kind: department
+  name: 프랑스학전공
+  college: 외국어대학 유럽중남미학부
+  aliases: [프랑스학]
+  campus: 천안
+  office: {tel: 041-550-3160, room: 인문과학관 221호}
+  base_url: https://cms.dankook.ac.kr/web/dkfrance
+  description: 프랑스학전공(천안) 공지사항·학과 소개·교수·교과과정·졸업 후 진로
+  sections:
+    notice: {title: 공지사항, path: /web/dkfrance/-10}
+  datasets:
+    dept_info:
+    - {path: /web/dkfrance/-27}
+    professors:
+    - {path: /web/dkfrance/-professor}
+    - {path: /web/dkfrance/-professor1}
+    curriculum:
+    - {path: /web/dkfrance/-16, org: 외국어대학 유럽중남미학부}
+  pages:
+    career: {title: 졸업 후 진로, path: /web/dkfrance/-14}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+dkme:
+  type: dku_cms
+  kind: department
+  name: 경영공학과
+  college: 과학기술대학
+  aliases: [경영공학]
+  campus: 천안
+  office: {tel: '041-550-3570,3579', room: 공학관 304호}
+  base_url: https://cms.dankook.ac.kr/web/dkme
+  description: 경영공학과(천안) 수상실적 및 활동·학과 공지사항·취업/공모/장학·학과소식·학과 소개·교수·교과과정·찾아오시는 길
+  sections:
+    activity: {title: 수상실적 및 활동, path: /web/dkme/-12}
+    notice: {title: 학과 공지사항, path: /web/dkme/-4}
+    scholarship: {title: 취업/공모/장학, path: /web/dkme/-16}
+    activity_2: {title: 학과소식, path: /web/dkme/-20}
+  datasets:
+    dept_info:
+    - {path: /web/dkme/-5}
+    professors:
+    - {path: /web/dkme/-6}
+    curriculum:
+    - {path: /web/dkme/-15, org: 과학기술대학}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/dkme/-3}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+dkuhort:
+  type: dku_cms
+  kind: department
+  name: 환경원예학전공
+  college: 바이오융합대학 생명공학부
+  aliases: [환경원예학]
+  campus: 천안
+  office: {tel: 041-550-3640, room: 생명공학대학 207호}
+  base_url: https://cms.dankook.ac.kr/web/dkuhort
+  description: 환경원예학전공(천안) 공지사항·학과소식·취업 정보·대외활동·학과 소개·교수·교과과정·졸업요건·주요 진로 분야·전공 관련 자격증
+  sections:
+    notice: {title: 공지사항, path: /web/dkuhort/-10}
+    activity: {title: 학과소식, path: /web/dkuhort/-17}
+    jobs: {title: 취업 정보, path: /web/dkuhort/-9}
+    activity_2: {title: 대외활동, path: /web/dkuhort/-11}
+  datasets:
+    dept_info:
+    - {path: /web/dkuhort/-7}
+    professors:
+    - {path: /web/dkuhort/-professor}
+    - {path: /web/dkuhort/-professor1}
+    curriculum:
+    - {path: /web/dkuhort/-2, org: 바이오융합대학 생명공학부}
+  pages:
+    graduation: {title: 졸업요건, path: /web/dkuhort/-3}
+    career: {title: 주요 진로 분야, path: /web/dkuhort/-5}
+    certificate: {title: 전공 관련 자격증, path: /web/dkuhort/-6}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+dkwelfare:
+  type: dku_cms
+  kind: department
+  name: 사회복지학과
+  college: 공공인재대학
+  aliases: [사회복지학]
+  campus: 천안
+  office: {tel: 041-550-3240, room: 사회과학관 337호}
+  base_url: https://cms.dankook.ac.kr/web/dkwelfare
+  description: 사회복지학과(천안) 공지사항·학과 소개·교수·교과과정
+  sections:
+    notice: {title: 공지사항, path: /web/dkwelfare/-10}
+  datasets:
+    dept_info:
+    - {path: /web/dkwelfare/-7}
+    professors:
+    - {path: /web/dkwelfare/-6}
+    curriculum:
+    - {path: /web/dkwelfare/-17, org: 공공인재대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+dsm:
+  type: dku_cms
+  kind: department
+  name: 스포츠경영학과
+  college: 스포츠과학대학
+  aliases: [스포츠경영학]
+  campus: 천안
+  office: {tel: 041-550-3820, room: 체육관 109}
+  base_url: https://cms.dankook.ac.kr/web/dsm
+  description: 스포츠경영학과(천안) 학과 소개·교수·교과과정
+  datasets:
+    dept_info:
+    - {path: /web/dsm/일반소개}
+    professors:
+    - {path: /web/dsm/교수소개}
+    curriculum:
+    - {path: /web/dsm/교과과정, org: 스포츠과학대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+energy:
+  type: dku_cms
+  kind: department
+  name: 에너지공학과
+  college: 과학기술대학
+  aliases: [에너지공학]
+  campus: 천안
+  office: {tel: 041-529-6203, room: 공학관 304호}
+  base_url: https://cms.dankook.ac.kr/web/energy
+  description: 에너지공학과(천안) 학부공지·대학원공지·장학/취업공지·자료실·학과 소개·교수·교과과정·에너지소재공정연구실·전기화학응용소재연구실·차세대에너지소재소자연구실·환경에너지나노소재연구실·미래에너지시스템전기화학공학연구실
+  sections:
+    notice: {title: 학부공지, path: /web/energy/-10}
+    grad: {title: 대학원공지, path: /web/energy/-11}
+    scholarship: {title: 장학/취업공지, path: /web/energy/-12}
+    archive: {title: 자료실, path: /web/energy/-21}
+  datasets:
+    dept_info:
+    - {path: /web/energy/-7}
+    professors:
+    - {path: /web/energy/-14}
+    curriculum:
+    - {path: /web/energy/-15, org: 과학기술대학}
+  pages:
+    labs: {title: 에너지소재공정연구실, path: /web/energy/-17}
+    labs_2: {title: 전기화학응용소재연구실, path: /web/energy/-29}
+    labs_3: {title: 차세대에너지소재소자연구실, path: /web/energy/-30}
+    labs_4: {title: 환경에너지나노소재연구실, path: /web/energy/-16}
+    labs_5: {title: 미래에너지시스템전기화학공학연구실, path: /web/energy/-32}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+english:
+  type: dku_cms
+  kind: department
+  name: 영어과
+  college: 외국어대학
+  aliases: [영어]
+  campus: 천안
+  office: {tel: 041-550-3130, room: 인문과학관 221호}
+  base_url: https://cms.dankook.ac.kr/web/english
+  description: 영어과(천안) 공지사항·채용게시판·학과 소개·교과과정·교수·찾아오시는 길
+  sections:
+    notice: {title: 공지사항, path: /web/english/-10}
+    jobs: {title: 채용게시판, path: /web/english/q-a-}
+  datasets:
+    dept_info:
+    - {path: /web/english/-8}
+    curriculum:
+    - {path: /web/english/-2, org: 외국어대학}
+    professors:
+    - {path: /web/english/-1}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/english/-17}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+ere:
+  type: dku_cms
+  kind: department
+  name: 식품자원경제학과
+  college: 공공인재대학
+  aliases: [식품자원경제학]
+  campus: 천안
+  office: {tel: 041-550-3610, room: 사회과학관 337호}
+  base_url: https://cms.dankook.ac.kr/web/ere
+  description: 식품자원경제학과(천안) 학과 소개·교수·교과과정·찾아오시는 길
+  datasets:
+    dept_info:
+    - {path: /web/ere/-2}
+    professors:
+    - {path: /web/ere/-11}
+    curriculum:
+    - {path: /web/ere/정규-교육과정, org: 공공인재대학}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/ere/찾아오시는-길}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+fineart:
+  type: dku_cms
+  kind: department
+  name: 서양화전공
+  college: 예술대학 미술학부
+  aliases: [서양화]
+  campus: 천안
+  office: {tel: 041-550-3720, room: 예술관 A동 109호}
+  base_url: https://cms.dankook.ac.kr/web/fineart
+  description: 서양화전공(천안) 학과 소개·교수·교과과정
+  datasets:
+    dept_info:
+    - {path: /web/fineart/-7}
+    professors:
+    - {path: /web/fineart/-professor}
+    - {path: /web/fineart/-professor1}
+    curriculum:
+    - {path: /web/fineart/-2, org: 예술대학 미술학부}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+food:
+  type: dku_cms
+  kind: department
+  name: 식품공학과
+  college: 바이오융합대학
+  aliases: [식품공학]
+  campus: 천안
+  office: {tel: 041-529-6362, room: 공학관 517호}
+  base_url: https://cms.dankook.ac.kr/web/food
+  description: 식품공학과(천안) 공지게시판·학과 소개·교과과정·교수
+  sections:
+    notice: {title: 공지게시판, path: /web/food/-10}
+  datasets:
+    dept_info:
+    - {path: /web/food/-29}
+    curriculum:
+    - {path: /web/food/-36, org: 바이오융합대학}
+    - {path: /web/food/-9, org: 바이오융합대학}
+    professors:
+    - {path: /web/food/-30}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+foodnutrition:
+  type: dku_cms
+  kind: department
+  name: 식품영양학과
+  college: 과학기술대학
+  aliases: [식품영양학]
+  campus: 천안
+  office: {tel: 041-550-3470, room: 자연과학1관 201호}
+  base_url: https://cms.dankook.ac.kr/web/foodnutrition
+  description: 식품영양학과(천안) 학부 공지·일반대학원 공지·교육대학원 공지·취업·학과 소개·교수·교과과정
+  sections:
+    notice: {title: 학부 공지, path: /web/foodnutrition/-10}
+    grad: {title: 일반대학원 공지, path: /web/foodnutrition/-20}
+    grad_2: {title: 교육대학원 공지, path: /web/foodnutrition/-21}
+    jobs: {title: 취업, path: /web/foodnutrition/-22}
+  datasets:
+    dept_info:
+    - {path: /web/foodnutrition/-7}
+    professors:
+    - {path: /web/foodnutrition/-5}
+    curriculum:
+    - {path: /web/foodnutrition/-1, org: 과학기술대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+german:
+  type: dku_cms
+  kind: department
+  name: 독일학전공
+  college: 외국어대학 유럽중남미학부
+  aliases: [독일학]
+  campus: 천안
+  office: {tel: 041-550-3150, room: 인문과학관 221호}
+  base_url: https://cms.dankook.ac.kr/web/german
+  description: 독일학전공(천안) 학과 소개·교수·교과과정·이수로드맵
+  datasets:
+    dept_info:
+    - {path: /web/german/-21}
+    - {path: /web/german/-7}
+    professors:
+    - {path: /web/german/-professor}
+    - {path: /web/german/-professor1}
+    curriculum:
+    - {path: /web/german/-8, org: 외국어대학 유럽중남미학부}
+  pages:
+    curriculum_guide: {title: 이수로드맵, path: /web/german/-20}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+globalhankook:
+  type: dku_cms
+  kind: department
+  name: 글로벌한국어과
+  college: 외국어대학
+  aliases: [글로벌한국어]
+  campus: 천안
+  office: {tel: 041-550-3110, room: 인문과학관 330호}
+  base_url: https://cms.dankook.ac.kr/web/globalhankook
+  description: 글로벌한국어과(천안) 공지사항·글로벌한국어과 소식·학과 소개·교수·찾아오시는 길
+  sections:
+    notice: {title: 공지사항, path: /web/globalhankook/-13}
+    activity: {title: 글로벌한국어과 소식, path: /web/globalhankook/gk.news}
+  datasets:
+    dept_info:
+    - {path: /web/globalhankook/일반소개}
+    professors:
+    - {path: /web/globalhankook/-7}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/globalhankook/-10}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+healthadmin:
+  type: dku_cms
+  kind: department
+  name: 보건행정학과
+  college: 보건과학대학
+  aliases: [보건행정학]
+  campus: 천안
+  office: {tel: 041-550-1470, room: 보건과학관 101호}
+  base_url: https://cms.dankook.ac.kr/web/healthadmin
+  description: 보건행정학과(천안) 보건의료정보관리인증·보건행정소식·채용공고·실습현황·학과 소개·교수·찾아오시는 길
+  sections:
+    archive: {title: 보건의료정보관리인증, path: /web/healthadmin/-11}
+    activity: {title: 보건행정소식, path: /web/healthadmin/-16}
+    jobs: {title: 채용공고, path: /web/healthadmin/-19}
+    activity_2: {title: 실습현황, path: /web/healthadmin/-15}
+  datasets:
+    dept_info:
+    - {path: /web/healthadmin/-3}
+    professors:
+    - {path: /web/healthadmin/-4}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/healthadmin/-22}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+int_sports:
+  type: dku_cms
+  kind: department
+  name: 국제스포츠전공
+  college: 스포츠과학대학 국제스포츠학부
+  aliases: [국제스포츠]
+  campus: 천안
+  office: {tel: 041-550-3860, room: 체육관 109호}
+  base_url: https://cms.dankook.ac.kr/web/int_sports
+  description: 국제스포츠전공(천안) 교수·교과과정
+  datasets:
+    professors:
+    - {path: /web/int_sports/professor1}
+    - {path: /web/int_sports/professor2}
+    curriculum:
+    - {path: /web/int_sports/교과과정표, org: 스포츠과학대학 국제스포츠학부}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+japanese:
+  type: dku_cms
+  kind: department
+  name: 일본학전공
+  college: 외국어대학 아시아중동학부
+  aliases: [일본학]
+  campus: 천안
+  office: {tel: 041-550-3190, room: 인문과학관 330호}
+  base_url: https://cms.dankook.ac.kr/web/japanese
+  description: 일본학전공(천안) 공지사항·자료실·학과 소개·교수·교과과정·찾아오시는 길
+  sections:
+    notice: {title: 공지사항, path: /web/japanese/-6}
+    archive: {title: 자료실, path: /web/japanese/-9}
+  datasets:
+    dept_info:
+    - {path: /web/japanese/교육목표}
+    professors:
+    - {path: /web/japanese/-professor}
+    - {path: /web/japanese/-professor1}
+    curriculum:
+    - {path: /web/japanese/이수로드맵-및-교육과정, org: 외국어대학 아시아중동학부}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/japanese/찾아오시는-길}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+jazzperformance:
+  type: dku_cms
+  kind: department
+  name: 재즈퍼포먼스전공
+  college: 예술대학 뉴뮤직학부
+  aliases: [재즈퍼포먼스]
+  campus: 천안
+  office: {tel: 041-550-3781, room: 예술관 B동 321호}
+  base_url: https://cms.dankook.ac.kr/web/jazzperformance
+  description: 재즈퍼포먼스전공(천안) 학과 소개·교수·교과과정
+  datasets:
+    dept_info:
+    - {path: /web/jazzperformance/일반소개}
+    professors:
+    - {path: /web/jazzperformance/professor1}
+    - {path: /web/jazzperformance/professor2}
+    curriculum:
+    - {path: /web/jazzperformance/교과과정, org: 예술대학 뉴뮤직학부}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+joso:
+  type: dku_cms
+  kind: department
+  name: 조소전공
+  college: 예술대학 미술학부
+  aliases: [조소]
+  campus: 천안
+  office: {tel: 041-550-3760, room: 예술관 C동 206호}
+  base_url: https://cms.dankook.ac.kr/web/joso
+  description: 조소전공(천안) 학과 소개·교수·교과과정
+  datasets:
+    dept_info:
+    - {path: /web/joso/-7}
+    professors:
+    - {path: /web/joso/professor1}
+    - {path: /web/joso/professor2}
+    curriculum:
+    - {path: /web/joso/-14, org: 예술대학 미술학부}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+landscape:
+  type: dku_cms
+  kind: department
+  name: 녹지조경학전공
+  college: 바이오융합대학 생명공학부
+  aliases: [녹지조경학]
+  campus: 천안
+  office: {tel: 041-550-3630, room: 생명자원과학대학 301호}
+  base_url: https://cms.dankook.ac.kr/web/landscape
+  description: 녹지조경학전공(천안) 대학원 활동·2025년 졸업작품전·2024년 졸업작품전·수업자료실·공지사항·대외활동·학과 소개·교수·관광 및 지역계획 연구실
+  sections:
+    grad: {title: 대학원 활동, path: /web/landscape/-25}
+    capstone: {title: 2025년 졸업작품전, path: /web/landscape/2025-}
+    capstone_2: {title: 2024년 졸업작품전, path: /web/landscape/2024-}
+    archive: {title: 수업자료실, path: /web/landscape/-18}
+    notice: {title: 공지사항, path: /web/landscape/notice}
+    activity: {title: 대외활동, path: /web/landscape/activity}
+  datasets:
+    dept_info:
+    - {path: /web/landscape/majorinfo_}
+    professors:
+    - {path: /web/landscape/-professor}
+    - {path: /web/landscape/-professor1}
+  pages:
+    labs: {title: 관광 및 지역계획 연구실, path: /web/landscape/-10}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+mathematics:
+  type: dku_cms
+  kind: department
+  name: 수학과
+  college: 과학기술대학
+  aliases: [수학]
+  campus: 천안
+  office: {tel: 041-550-3410, room: 자연과학1관 201호}
+  base_url: https://cms.dankook.ac.kr/web/mathematics
+  description: 수학과(천안) 수학과게시판·교육자료실·학과 소개·교수·찾아오시는 길
+  sections:
+    notice: {title: 수학과게시판, path: /web/mathematics/-21}
+    archive: {title: 교육자료실, path: /web/mathematics/-23}
+  datasets:
+    dept_info:
+    - {path: /web/mathematics/-1}
+    professors:
+    - {path: /web/mathematics/교수진-소개}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/mathematics/-2}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+microbiology:
+  type: dku_cms
+  kind: department
+  name: 미생물학전공
+  college: 바이오융합대학 의생명과학부
+  aliases: [미생물학]
+  campus: 천안
+  office: {tel: 041-529-6017, room: 제1과학관 503호}
+  base_url: https://cms.dankook.ac.kr/web/microbiology
+  description: 미생물학전공(천안) 공지사항·News·장학 및 취업·학과 소개·교수·교과과정·대학원 미생물유전체연구실험실(한규동)
+  sections:
+    notice: {title: 공지사항, path: /web/microbiology/-10}
+    activity: {title: News, path: /web/microbiology/-11}
+    scholarship: {title: 장학 및 취업, path: /web/microbiology/장학-및-취업}
+  datasets:
+    dept_info:
+    - {path: /web/microbiology/-28}
+    professors:
+    - {path: /web/microbiology/-professor}
+    - {path: /web/microbiology/-professor1}
+    curriculum:
+    - {path: /web/microbiology/-14, org: 바이오융합대학 의생명과학부}
+  pages:
+    grad_labs: {title: 대학원 미생물유전체연구실험실(한규동), path: /web/microbiology/-5}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+middleeasternstudies:
+  type: dku_cms
+  kind: department
+  name: 중동학전공
+  college: 외국어대학 아시아중동학부
+  aliases: [중동학]
+  campus: 천안
+  office: {tel: 041-550-3120, room: 인문과학관 330호}
+  base_url: https://cms.dankook.ac.kr/web/middleeasternstudies
+  description: 중동학전공(천안) 공지게시판·취업게시판·학과 소개·교수·교과과정·졸업 후 진로·찾아오시는 길
+  sections:
+    notice: {title: 공지게시판, path: /web/middleeasternstudies/-18}
+    jobs: {title: 취업게시판, path: /web/middleeasternstudies/-19}
+  datasets:
+    dept_info:
+    - {path: /web/middleeasternstudies/-6}
+    professors:
+    - {path: /web/middleeasternstudies/-professor}
+    - {path: /web/middleeasternstudies/-professor1}
+    curriculum:
+    - {path: /web/middleeasternstudies/-12, org: 외국어대학 아시아중동학부}
+  pages:
+    career: {title: 졸업 후 진로, path: /web/middleeasternstudies/-8}
+    location: {title: 찾아오시는 길, path: /web/middleeasternstudies/-7}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+mongol:
+  type: dku_cms
+  kind: department
+  name: 몽골학전공
+  college: 외국어대학 아시아중동학부
+  aliases: [몽골학]
+  campus: 천안
+  office: {tel: 041-550-3230, room: 인문과학관 330호}
+  base_url: https://cms.dankook.ac.kr/web/mongol
+  description: 몽골학전공(천안) 공지사항·몽골학과 뉴스·교수·찾아오시는 길·졸업요건
+  sections:
+    notice: {title: 공지사항, path: /web/mongol/-10}
+    activity: {title: 몽골학과 뉴스, path: /web/mongol/-13}
+  datasets:
+    professors:
+    - {path: /web/mongol/-professor}
+    - {path: /web/mongol/-professor1}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/mongol/찾아오시는-길}
+    graduation: {title: 졸업요건, path: /web/mongol/졸업요건1}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+mse:
+  type: dku_cms
+  kind: department
+  name: 신소재공학과
+  college: 과학기술대학
+  aliases: [신소재공학]
+  campus: 천안
+  office: {tel: 041-550-3530, room: 공학관 304호}
+  base_url: https://cms.dankook.ac.kr/web/mse
+  description: 신소재공학과(천안) 공지사항·News·자료실·장학&취업정보·학과 소개·교과과정·교수·진로/활동분야·찾아오시는 길·대학원 나노구조재료 공정 연구실(주수현)·대학원 재료전산모사 연구실(최용석)
+  sections:
+    notice: {title: 공지사항, path: /web/mse/-10}
+    activity: {title: News, path: /web/mse/q-a-}
+    archive: {title: 자료실, path: /web/mse/-13}
+    scholarship: {title: 장학&취업정보, path: /web/mse/-25}
+  datasets:
+    dept_info:
+    - {path: /web/mse/-7}
+    curriculum:
+    - {path: /web/mse/-1, org: 과학기술대학}
+    professors:
+    - {path: /web/mse/-16}
+  pages:
+    career: {title: 진로/활동분야, path: /web/mse/-18}
+    location: {title: 찾아오시는 길, path: /web/mse/-9}
+    grad_labs: {title: 대학원 나노구조재료 공정 연구실(주수현), path: /web/mse/-24}
+    grad_labs_2: {title: 대학원 재료전산모사 연구실(최용석), path: /web/mse/-23}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+newmusicdku:
+  type: dku_cms
+  kind: department
+  name: 뮤직테크놀러지전공
+  college: 예술대학 뉴뮤직학부
+  aliases: [뮤직테크놀러지]
+  campus: 천안
+  office: {tel: 041-550-3789, room: 예술관B동 321호}
+  base_url: https://cms.dankook.ac.kr/web/newmusicdku
+  description: 뮤직테크놀러지전공(천안) 학과 소개·교수·교과과정
+  datasets:
+    dept_info:
+    - {path: /web/newmusicdku/-1}
+    professors:
+    - {path: /web/newmusicdku/professor1}
+    - {path: /web/newmusicdku/professor2}
+    curriculum:
+    - {path: /web/newmusicdku/-3, org: 예술대학 뉴뮤직학부}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+nursing:
+  type: dku_cms
+  kind: department
+  name: 간호학과
+  college: 간호대학
+  aliases: [간호학]
+  campus: 천안
+  office: {tel: 041-550-3880, room: 의과대학 232-1호}
+  base_url: https://cms.dankook.ac.kr/web/nursing
+  description: 간호학과(천안) 평가체계표·공지사항·학과자료실·취업정보·게시판·학습성과·공지사항(대학원)·공지사항(보건복지대학원)·학과 소개·교수·교과과정·찾아오시는 길
+  sections:
+    archive: {title: 평가체계표, path: /web/nursing/-55}
+    notice: {title: 공지사항, path: /web/nursing/-10}
+    archive_2: {title: 학과자료실, path: /web/nursing/-17}
+    jobs: {title: 취업정보, path: /web/nursing/q-a-}
+    notice_2: {title: 게시판, path: /web/nursing/-13}
+    archive_3: {title: 학습성과, path: /web/nursing/학습성과}
+    notice_3: {title: 공지사항, path: /web/nursing/-53}
+    grad: {title: 공지사항(대학원), path: /web/nursing/-50}
+    grad_2: {title: 공지사항(보건복지대학원), path: /web/nursing/-51}
+  datasets:
+    dept_info:
+    - {path: /web/nursing/-7, org: 대학원}
+    professors:
+    - {path: /web/nursing/-1}
+    curriculum:
+    - {path: /web/nursing/-57, org: 대학원}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/nursing/찾아오시는-길}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+oriental:
+  type: dku_cms
+  kind: department
+  name: 동양화전공
+  college: 예술대학 미술학부
+  aliases: [동양화]
+  campus: 천안
+  office: {tel: 041-550-3730, room: 예술관 A동 415호}
+  base_url: https://cms.dankook.ac.kr/web/oriental
+  description: 동양화전공(천안) 학과 소개·교수·교과과정
+  datasets:
+    dept_info:
+    - {path: /web/oriental/-5}
+    professors:
+    - {path: /web/oriental/-professor}
+    - {path: /web/oriental/-professor1}
+    curriculum:
+    - {path: /web/oriental/학사일정, org: 예술대학 미술학부}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+pharm:
+  type: dku_cms
+  kind: department
+  name: 제약공학과
+  college: 과학기술대학
+  aliases: [제약공학]
+  campus: 천안
+  office: {tel: 041-550-3590, room: 공학관 304호}
+  base_url: https://cms.dankook.ac.kr/web/pharm
+  description: 제약공학과(천안) 교수·학과 소개·교과과정
+  datasets:
+    professors:
+    - {path: /web/pharm/home1}
+    dept_info:
+    - {path: /web/pharm/-8}
+    curriculum:
+    - {path: /web/pharm/-14, org: 과학기술대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+pharmacy:
+  type: dku_cms
+  kind: department
+  name: 약학과
+  college: 약학대학
+  aliases: [약학]
+  campus: 천안
+  office: {tel: 041-550-1404, room: 약학관 201호}
+  base_url: https://cms.dankook.ac.kr/web/pharmacy
+  description: 약학과(천안) 학부 공지사항·대학원 공지사항·취업·모집 공고·행사·학술세미나/동향 및 수상·학과 소개·교수·교과과정·오시는길
+  sections:
+    notice: {title: 학부 공지사항, path: /web/pharmacy/-20}
+    grad: {title: 대학원 공지사항, path: /web/pharmacy/대학원-공지사항}
+    jobs: {title: 취업·모집 공고, path: /web/pharmacy/-9}
+    activity: {title: 행사·학술세미나/동향 및 수상, path: /web/pharmacy/-17}
+  datasets:
+    dept_info:
+    - {path: /web/pharmacy/-14}
+    professors:
+    - {path: /web/pharmacy/-15}
+    curriculum:
+    - {path: /web/pharmacy/-16, org: 약학대학}
+  pages:
+    location: {title: 오시는길, path: /web/pharmacy/-19}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+physical_therapy:
+  type: dku_cms
+  kind: department
+  name: 물리치료학과
+  college: 보건과학대학
+  aliases: [물리치료학]
+  campus: 천안
+  office: {tel: 041-550-1460, room: 보건과학관 101호}
+  base_url: https://cms.dankook.ac.kr/web/physical_therapy
+  description: 물리치료학과(천안) 학과 소개·교수·교과과정·취업 및 진로
+  datasets:
+    dept_info:
+    - {path: /web/physical_therapy/-3}
+    professors:
+    - {path: /web/physical_therapy/-4}
+    curriculum:
+    - {path: /web/physical_therapy/-5, org: 보건과학대학}
+  pages:
+    career: {title: 취업 및 진로, path: /web/physical_therapy/취업-및-진로}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+physics:
+  type: dku_cms
+  kind: department
+  name: 물리학과
+  college: 과학기술대학
+  aliases: [물리학]
+  campus: 천안
+  office: {tel: 041-550-3420, room: 자연과학1관 201호}
+  base_url: https://cms.dankook.ac.kr/web/physics
+  description: 물리학과(천안) 학사 게시판·홍보 게시판·학과 소개·교과과정·교수·찾아오시는 길
+  sections:
+    notice: {title: 학사 게시판, path: /web/physics/-20}
+    activity: {title: 홍보 게시판, path: /web/physics/-5}
+  datasets:
+    dept_info:
+    - {path: /web/physics/-1}
+    curriculum:
+    - {path: /web/physics/-18, org: 과학기술대학}
+    professors:
+    - {path: /web/physics/-3}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/physics/-4}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+portuguese:
+  type: dku_cms
+  kind: department
+  name: 포르투갈브라질학전공
+  college: 외국어대학 유럽중남미학부
+  aliases: [포르투갈브라질학]
+  campus: 천안
+  office: {tel: 041-550-3270, room: 인문과학관 221호}
+  base_url: https://cms.dankook.ac.kr/web/portuguese
+  description: 포르투갈브라질학전공(천안) 공지사항·학과 소개·교수·교과과정·찾아오시는 길
+  sections:
+    notice: {title: 공지사항, path: /web/portuguese/-2}
+  datasets:
+    dept_info:
+    - {path: /web/portuguese/-9}
+    professors:
+    - {path: /web/portuguese/-professor}
+    - {path: /web/portuguese/-professor1}
+    curriculum:
+    - {path: /web/portuguese/교과과정, org: 외국어대학 유럽중남미학부}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/portuguese/-5}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+psychology:
+  type: dku_cms
+  kind: department
+  name: 심리학과·심리치료학과
+  college: 보건과학대학
+  aliases: [심리학과, 심리치료학과]
+  campus: 천안
+  office: {tel: 041-550-3260, room: 사회과학관 337호}
+  base_url: https://cms.dankook.ac.kr/web/psychology
+  description: 심리학과·심리치료학과(천안) 학과 소개·교수
+  datasets:
+    dept_info:
+    - {path: /web/psychology/-5}
+    professors:
+    - {path: /web/psychology/교수소개}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+publicadm:
+  type: dku_cms
+  kind: department
+  name: 공공정책학과·공공정책학과(야)
+  college: 공공인재대학
+  aliases: [공공정책학과, 공공정책학과(야)]
+  campus: 천안
+  office: {tel: 041-550-3310, room: 사회과학관 337호}
+  base_url: https://cms.dankook.ac.kr/web/publicadm
+  description: 공공정책학과·공공정책학과(야)(천안) 공지사항·취업정보·프로그램홍보·교수·학과 소개
+  sections:
+    notice: {title: 공지사항, path: /web/publicadm/-3}
+    jobs: {title: 취업정보, path: /web/publicadm/-4}
+    activity: {title: 프로그램홍보, path: /web/publicadm/q-a}
+  datasets:
+    professors:
+    - {path: /web/publicadm/-15}
+    dept_info:
+    - {path: /web/publicadm/-1-1}
+    - {path: /web/publicadm/-6}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+rokmcms:
+  type: dku_cms
+  kind: department
+  name: 해병대군사학과
+  college: 공공인재대학
+  aliases: [해병대군사학]
+  campus: 천안
+  office: {tel: 041-550-3330, room: 사회과학관 336호(학과사무실) / 133호(훈육관실)}
+  base_url: https://cms.dankook.ac.kr/web/rokmcms
+  description: 해병대군사학과(천안) 학과행사·뉴스 및 포럼·교육 및 세미나·특성화 활동·공지사항·학과 소개·교수·교과과정
+  sections:
+    activity: {title: 학과행사, path: /web/rokmcms/-9}
+    activity_2: {title: 뉴스 및 포럼, path: /web/rokmcms/-19}
+    activity_3: {title: 교육 및 세미나, path: /web/rokmcms/-10}
+    activity_4: {title: 특성화 활동, path: /web/rokmcms/-17}
+    notice: {title: 공지사항, path: /web/rokmcms/-6}
+  datasets:
+    dept_info:
+    - {path: /web/rokmcms/-5}
+    professors:
+    - {path: /web/rokmcms/-3}
+    curriculum:
+    - {path: /web/rokmcms/-4, org: 공공인재대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+russia:
+  type: dku_cms
+  kind: department
+  name: 러시아학전공
+  college: 외국어대학 유럽중남미학부
+  aliases: [러시아학]
+  campus: 천안
+  office: {tel: 041-550-3210, room: 외국어대학 221호}
+  base_url: https://cms.dankook.ac.kr/web/russia
+  description: 러시아학전공(천안) 공지사항·주요학사공지·자료실·취업정보·학과 소개·교수·교과과정·찾아오시는 길
+  sections:
+    notice: {title: 공지사항, path: /web/russia/-10}
+    notice_2: {title: 주요학사공지, path: /web/russia/q-a-}
+    archive: {title: 자료실, path: /web/russia/-13}
+    jobs: {title: 취업정보, path: /web/russia/-6}
+  datasets:
+    dept_info:
+    - {path: /web/russia/-1}
+    professors:
+    - {path: /web/russia/-professor}
+    - {path: /web/russia/-professor1}
+    curriculum:
+    - {path: /web/russia/-8, org: 외국어대학 유럽중남미학부}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/russia/-12}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+singersongwriting:
+  type: dku_cms
+  kind: department
+  name: 싱어송라이팅전공
+  college: 예술대학 뉴뮤직학부
+  aliases: [싱어송라이팅]
+  campus: 천안
+  office: {tel: 041-550-3780, room: 예술관 B동 321호}
+  base_url: https://cms.dankook.ac.kr/web/singersongwriting
+  description: 싱어송라이팅전공(천안) 학과 소개·교수·교과과정
+  datasets:
+    dept_info:
+    - {path: /web/singersongwriting/일반소개}
+    professors:
+    - {path: /web/singersongwriting/싱어송라이팅전공-교수소개}
+    - {path: /web/singersongwriting/뉴뮤직학부-교수소개}
+    curriculum:
+    - {path: /web/singersongwriting/교과과정, org: 예술대학 뉴뮤직학부}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+spain:
+  type: dku_cms
+  kind: department
+  name: 스페인중남미학전공
+  college: 외국어대학 유럽중남미학부
+  aliases: [스페인중남미학]
+  campus: 천안
+  office: {tel: 041-550-3180, room: 인문과학관 221호}
+  base_url: https://cms.dankook.ac.kr/web/spain
+  description: 스페인중남미학전공(천안) 학과 소개·교수·교과과정·찾아오시는 길
+  datasets:
+    dept_info:
+    - {path: /web/spain/-11}
+    professors:
+    - {path: /web/spain/-professor}
+    - {path: /web/spain/-professor1}
+    curriculum:
+    - {path: /web/spain/-2, org: 외국어대학 유럽중남미학부}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/spain/찾아오시는-길}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+sports:
+  type: dku_cms
+  kind: department
+  name: 생활체육학과
+  college: 스포츠과학대학
+  aliases: [생활체육학]
+  campus: 천안
+  office: {tel: 041-550-3810, room: 체육관 109호}
+  base_url: https://cms.dankook.ac.kr/web/sports
+  description: 생활체육학과(천안) 학과 소개·교수·교과과정
+  datasets:
+    dept_info:
+    - {path: /web/sports/-7}
+    professors:
+    - {path: /web/sports/교수소개}
+    curriculum:
+    - {path: /web/sports/-2, org: 스포츠과학대학}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+sportsscience:
+  type: dku_cms
+  kind: department
+  name: 운동처방재활전공
+  college: 스포츠과학대학 국제스포츠학부
+  aliases: [운동처방재활]
+  campus: 천안
+  office: {tel: 041-550-3830, room: 체육관 109호}
+  base_url: https://cms.dankook.ac.kr/web/sportsscience
+  description: 운동처방재활전공(천안) 학과 소개·교수·교과과정
+  datasets:
+    dept_info:
+    - {path: /web/sportsscience/-7}
+    professors:
+    - {path: /web/sportsscience/-1}
+    - {path: /web/sportsscience/professor1}
+    - {path: /web/sportsscience/professor2}
+    curriculum:
+    - {path: /web/sportsscience/정규교육과정, org: 스포츠과학대학 국제스포츠학부}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+taekwondo:
+  type: dku_cms
+  kind: department
+  name: 태권도전공
+  college: 스포츠과학대학 국제스포츠학부
+  aliases: [태권도]
+  campus: 천안
+  office: {tel: 041-550-3860, room: 체육관 109호}
+  base_url: https://cms.dankook.ac.kr/web/taekwondo
+  description: 태권도전공(천안) 교수·교과과정
+  datasets:
+    professors:
+    - {path: /web/taekwondo/professor1}
+    - {path: /web/taekwondo/professor2}
+    - {path: /web/taekwondo/초빙교수-및-강사}
+    curriculum:
+    - {path: /web/taekwondo/학년별-교과과정표, org: 스포츠과학대학 국제스포츠학부}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude
+vietnam:
+  type: dku_cms
+  kind: department
+  name: 베트남학전공
+  college: 외국어대학 아시아중동학부
+  aliases: [베트남학]
+  campus: 천안
+  office: {tel: 041-550-3250, room: 인문과학관 330호}
+  base_url: https://cms.dankook.ac.kr/web/vietnam
+  description: 베트남학전공(천안) 공지사항·취업 정보·베트남 뉴스·학과 소개·교수·교과과정·찾아오시는 길
+  sections:
+    notice: {title: 공지사항, path: /web/vietnam/-13}
+    jobs: {title: 취업 정보, path: /web/vietnam/-14}
+    activity: {title: 베트남 뉴스, path: /web/vietnam/-12}
+  datasets:
+    dept_info:
+    - {path: /web/vietnam/-5}
+    professors:
+    - {path: /web/vietnam/-professor}
+    - {path: /web/vietnam/-professor1}
+    curriculum:
+    - {path: /web/vietnam/-6, org: 외국어대학 아시아중동학부}
+  pages:
+    location: {title: 찾아오시는 길, path: /web/vietnam/-8}
+  freshness: realtime
+  reviewed_at: 2026-10-03
+  reviewed_by: claude

@@ -1,0 +1,234 @@
+# 단비 평가 질문 (설계 §12). 모델·프롬프트·도구 설명·레지스트리를 바꿀 때마다 evals/run.py로 돌린다.
+#
+# expect 항목 (모두 선택):
+#   sources:      써야 할 소스 (모두 써야 통과). 형식:
+#                   rag | rag:<짧은 이름>            search_knowledge (sources 필터 없이 전체 검색해도 인정)
+#                   site:<소스> | site:<소스>/<역할>  search_site · latest_items · get_item · read_attachment
+#                                                     (site:<소스>는 그 소스의 query_data · get_page도 인정)
+#                   data:<소스>/<데이터셋>            query_data
+#                   page:<소스>/<페이지>              get_page
+#                   attachment                        read_attachment
+#                   list_sources                      list_sources (학과·소스 찾기)
+#                   none                              도구를 쓰지 않아야 함
+#   forbid:       쓰면 안 되는 소스 (같은 형식, 앞부분 일치. 예: site)
+#   include:      답변에 모두 들어 있어야 할 말
+#   include_any:  답변에 하나 이상 들어 있어야 할 말
+#   exclude:      답변에 있으면 안 되는 말
+#   no_result:    true면 "없다/찾지 못했다"고 답해야 함
+#   max_tool_calls: 도구 호출 수 상한 (불필요한 호출 감시)
+#
+# 아직 없는 유형: 소스 장애(사이트 차단 상태) — 장애 주입 기능이 생기면 추가
+
+- id: rule-multimajor
+  type: 학칙
+  question: 다전공 이수가 제한되는 단과대는 어디야?
+  expect:
+    sources: [rag:학칙 시행세칙]
+    forbid: [site]
+    include: [의과대학, 치과대학, 약학대학]
+    max_tool_calls: 3
+
+- id: calendar-grade
+  type: 학사일정
+  question: 2학기 기말고사 성적 공시 기간은?
+  expect:
+    sources: [rag:학사일정]
+    include_any: ["12월 29일", "12-29", "12.29", "12. 29"]
+    max_tool_calls: 3
+
+- id: facility-shuttle
+  type: 시설
+  question: 죽전역 셔틀 첫차 시간은?
+  expect:
+    sources: [rag:셔틀버스]
+    forbid: [site]
+    include: ["08:15"]
+    max_tool_calls: 1
+
+- id: facility-building
+  type: 시설
+  question: 범정관은 어디 있어?
+  expect:
+    sources: [rag:캠퍼스맵]
+    forbid: [site]
+    max_tool_calls: 2
+
+- id: dept-notice-deadline
+  type: 학과 공지
+  question: 모바일시스템공학과 2026-2학기 1차 졸업시험 신청 기한은?
+  expect:
+    sources: [site:mobilesystems/notice]
+    include_any: ["9/30", "9월 30일", "9.30", "09.30"]
+    max_tool_calls: 4
+
+- id: no-result-reserve
+  type: 결과 없음
+  question: 2025년도 모바일시스템공학과 공지 중 예비군 관련 내용 알려줘
+  expect:
+    sources: [site:mobilesystems/notice]
+    no_result: true
+    include_any: ["2026", "2024"]   # 가장 가까운 글을 대안으로 제시
+    max_tool_calls: 6
+
+- id: two-sources-graduation
+  type: 두 소스 취합
+  question: 모바일시스템공학과 졸업 요건 알려줘
+  expect:
+    sources: [rag, site:mobilesystems/rules]
+    include: [졸업시험]
+    max_tool_calls: 8
+
+- id: conflict-course-change
+  type: 소스 충돌
+  question: 2학기 수강 정정 기간 언제야?
+  expect:
+    sources: [rag]
+    include: [정정]
+    max_tool_calls: 5
+
+- id: data-curriculum
+  type: 정형 조회
+  question: 모바일시스템공학과 2학년 1학기 전공 과목 알려줘
+  expect:
+    sources: [data:mobilesystems/curriculum]
+    include: [자료구조, 디지털논리회로, 확률및통계학]
+    max_tool_calls: 2
+
+- id: professor-office
+  type: 교수
+  question: 유시환 교수님 연구실 어디야?
+  expect:
+    sources: [data:mobilesystems/professors]
+    include: [국제관 615호]
+    max_tool_calls: 2
+
+- id: attachment-exam-scope
+  type: 첨부 의존
+  question: 모바일시스템공학과 졸업시험 범위 알려줘
+  expect:
+    sources: [site:mobilesystems/notice, attachment]
+    max_tool_calls: 8
+
+- id: alias-latest
+  type: 학과 식별
+  question: 모시공 최근 공지 뭐 있어?
+  expect:
+    sources: [site:mobilesystems/notice]
+    max_tool_calls: 2
+
+- id: ambiguous-dept
+  type: 학과 불분명
+  question: 공지사항에 장학금 글 있어?
+  expect:
+    include_any: ["어느 학과", "어떤 학과", "학과를 알려", "학과명을"]
+
+- id: unsupported-dept
+  type: 미검토 학과
+  question: 의학과 최근 공지 알려줘
+  expect:
+    sources: [list_sources]
+    forbid: [site]
+    include: ["041-550-3851"]          # dept_list의 공식 학과 사무실 연락처 (의과대학은 별도 사이트라 미지원)
+    include_any: ["지원하지 않", "검색할 수 없", "찾을 수 없", "제공하지 않", "확인할 수 없", "검색하지 못",
+                  "조회할 수 없", "포함되어 있지 않"]
+
+- id: missing-section
+  type: 섹션 없음
+  question: 모바일시스템공학과 대학원 공지 게시판 보여줘
+  expect:
+    no_result: true
+    max_tool_calls: 3
+
+- id: out-of-scope-weather
+  type: 범위 밖
+  question: 오늘 날씨 어때?
+  expect:
+    sources: [none]
+
+- id: out-of-scope-grades
+  type: 범위 밖
+  question: 내 성적 알려줘
+  expect:
+    sources: [none]
+    include: [포털]
+
+- id: alias-sw-grad
+  type: 학과 식별
+  question: 소웨 대학원 공지 최근 거 뭐 있어?
+  expect:
+    sources: [site:sw/grad]
+    max_tool_calls: 2
+
+- id: chem-graduation-scope
+  type: 학부·대학원 구분
+  question: 화학공학과 졸업요건 알려줘
+  expect:
+    sources: [site:chem]
+    include_any: ["(학부)", "학부 운영내규", "대학원"]   # 학부·대학원 중 어느 기준인지 밝혀야 한다 (졸업요건 페이지는 석·박사 기준)
+    max_tool_calls: 6
+
+- id: chem-scholarship
+  type: 안내 페이지
+  question: 화공과 장학금 안내해줘
+  expect:
+    sources: [site:chem]
+    include: [장학]
+    max_tool_calls: 4
+
+- id: campus-chemistry
+  type: 캠퍼스 구분
+  question: 천안 화학과 사무실 어디야?
+  expect:
+    sources: [list_sources]
+    forbid: [site:chem]
+    include: ["225호"]
+
+# --- Phase 8: 학과 일괄 등록 후 (도구 설명이 요약 모드 → list_sources로 학과를 찾아야 함) ---
+
+- id: bulk-dkupa-notice
+  type: 일괄 등록 학과
+  question: 행정학과 최근 공지 뭐 있어?
+  expect:
+    sources: [site:dkupa/notice]
+    max_tool_calls: 3
+
+- id: bulk-law-notice
+  type: 일괄 등록 학과
+  question: 법과대학 공지 중에 장학금 관련 글 있어?
+  expect:
+    sources: [site:law/notice]
+    include: [장학]
+    max_tool_calls: 4
+
+- id: bulk-alias-polisci
+  type: 학과 식별
+  question: 정외과 교수님 목록 알려줘
+  expect:
+    sources: [data:polisci/professors]
+    max_tool_calls: 3
+
+# --- 학교 공통 정보 (학사일정 실시간 달력·학식) ---
+
+- id: campus-menu-price
+  type: 학식
+  question: 죽전 학식 경성카츠 메뉴랑 가격 알려줘
+  expect:
+    sources: [data:dku_main/menu]
+    include: [원]
+    max_tool_calls: 3
+
+- id: campus-calendar-final
+  type: 학사일정
+  question: 이번 학기 기말고사 언제야?
+  expect:
+    sources: [data:dku_main/calendar]
+    include_any: ["12월 9일", "12-09", "12.09", "12/9", "12. 9"]
+    max_tool_calls: 4
+
+- id: library-hours
+  type: 도서관
+  question: 도서관 몇 시까지 열어?
+  expect:
+    sources: [rag]               # 도서관 사이트는 robots.txt가 수집을 막아 문서 자료(RAG)로 답한다
+    forbid: [site]
+    max_tool_calls: 3

@@ -1,0 +1,33 @@
+# 1차 검토 예외 (Claude, 2026-10-03). scripts/review_drafts.py가 규칙 적용 후 이 내용을 덮어쓴다.
+# 근거는 `python -m scripts.review_drafts --peek`가 docs/department_review.md에 붙이는 최신 글 제목.
+#   roles:      {게시판 경로: 역할 | drop}
+#   keep_pages: [경로]          표준 종류가 아니어도 남길 안내 페이지 (page_ids로 ID 지정)
+#   aliases / description / hold(보류 사유)
+
+polisci:
+  roles:
+    /web/polisci/-36: activity        # '재학생': 학생 동정·진로 특강·학술답사 소식 (공지 게시판은 비공개/없음)
+
+mathematics:
+  roles:
+    /web/mathematics/-21: notice      # '수학과게시판': 강제입력 안내·신입생 안내 → 사실상 학과 공지
+
+middleeasternstudies:
+  roles:
+    /web/middleeasternstudies/-14: drop   # '정치': 2012년 뉴스 스크랩
+
+nursing:
+  roles:
+    /web/nursing/-13: notice          # '게시판': 유고결석 안내 등 학과 안내
+    /web/nursing/-55: archive         # 프로그램 학습성과 평가체계표 (학번별)
+    /web/nursing/학습성과: archive
+    /web/nursing/-52: drop            # 출판논문 목록
+
+ib:
+  roles:
+    /web/ib/기타정보: activity        # 'Additional Information': 캠프·해외인턴십·비교과 프로그램
+
+dentistry:
+  roles:
+    /web/dentistry/-q-a: archive      # '입학전형': 연도별 치의예과 입시결과
+    /web/dentistry/-28: activity      # 치과대학 연구동향

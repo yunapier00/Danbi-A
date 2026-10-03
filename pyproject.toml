@@ -1,0 +1,41 @@
+[project]
+name = "danbi"
+version = "0.1.0"
+description = "단국대학교 질의응답 AI 에이전트"
+requires-python = ">=3.11"
+dependencies = [
+    "google-genai>=2.27",
+    "chromadb==1.5.0",   # 기존 DB(chroma_db_dd3)를 만든 버전과 같아야 한다
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "requests>=2.31",
+    "beautifulsoup4>=4.12",
+    "lxml>=5.0",
+    "markdownify>=0.13",
+    "pdfminer.six>=20240706",   # 첨부 PDF (MIT. AGPL인 PyMuPDF는 쓰지 않는다)
+    "olefile>=0.47",     # 첨부 HWP 5.0 (레코드는 직접 파싱)
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "httpx>=0.27",       # 카카오 콜백 전송
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["danbi*"]
+
+[tool.setuptools.package-data]
+danbi = ["api/web/*", "api/web/assets/*"]   # React 빌드 결과 (frontend/에서 npm run build)
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "live: 실제 API 키와 chroma_db_dd3가 필요한 테스트 (pytest -m live)",
+]
+addopts = "-m 'not live'"

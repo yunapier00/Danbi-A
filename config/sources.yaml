@@ -1,0 +1,118 @@
+# 소스 레지스트리 (사람이 검토한 파일). 형식: docs/DANBI_DESIGN.md §8.3
+# reviewed_at이 비어 있는 소스는 검색에 쓰지 않는다.
+
+campus_rules:
+  type: chroma
+  name: 학교 규정·학사 자료
+  description: auto            # RAG 출처 목록에서 자동 생성 (search_knowledge)
+
+mobilesystems:
+  type: dku_cms
+  kind: department
+  name: 모바일시스템공학과
+  college: 프리무스국제대학
+  aliases: [모시공, 모바일, 모바일시스템, 모바일시스템공학]
+  campus: 죽전
+  office: { tel: 031-8005-3638, room: 국제관 302호 }
+  base_url: https://cms.dankook.ac.kr/web/mobilesystems
+  description: 모바일시스템공학과 공지·취업정보·학과 내규(졸업논문·졸업시험), 교수, 교과과정
+  sections:
+    notice:   { title: 공지사항,               path: /web/mobilesystems/-8 }
+    jobs:     { title: 취업 정보,              path: /web/mobilesystems/-12 }
+    rules:    { title: 모바일과(국제대) 규정,   path: /web/mobilesystems/-25 }
+    rules_sw: { title: 모바일과(SW융합대) 규정, path: /web/mobilesystems/-28, same_as: rules }
+  datasets:
+    dept_info:  [ { path: /web/mobilesystems/-6 } ]
+    professors: [ { path: /web/mobilesystems/-5 } ]
+    curriculum:
+      - { org: SW융합대학,       path: /web/mobilesystems/-3 }
+      - { org: 프리무스국제대학, path: /web/mobilesystems/-27 }
+  freshness: realtime
+  reviewed_at: 2026-10-02
+
+# 아래 두 소스: scripts/discover_source.py 초안(2026-10-02)을 Claude가 검토 — 메뉴 경로로 학부/대학원 구분,
+# 역할 확인, 인사말·연혁·동아리 소개 페이지 제외, 별칭 추가. 사용자 재확인 권장.
+sw:
+  type: dku_cms
+  kind: department
+  name: 소프트웨어학과
+  college: AI융합대학
+  aliases: [소웨, 소프트웨어, SW학과, 소프트웨어학부]
+  campus: 죽전
+  office: { tel: "031-8005-3227/3966", room: 소프트웨어 ICT관 311호 }
+  base_url: https://cms.dankook.ac.kr/web/sw
+  description: 소프트웨어학과 학과공지·대학원(컴퓨터학과대학원) 공지·졸업작품, 학과·대학원 소개, 교수, 교과과정, 연구실 소개, 오시는 길
+  sections:
+    notice:   { title: 학과공지,   path: /web/sw/-1 }
+    grad:     { title: 대학원 공지, path: /web/sw/-19 }
+    capstone: { title: 졸업작품,   path: /web/sw/졸업작품 }
+  datasets:
+    dept_info:
+      - { path: /web/sw/-9 }
+      - { path: /web/sw/-6, org: 대학원 }
+    curriculum:
+      - { path: /web/sw/sw_curriculum, org: AI융합대학 }
+    professors:
+      - { path: /web/sw/교수소개 }
+  pages:
+    labs:     { title: 연구실 소개, path: /web/sw/-23 }
+    location: { title: 오시는길,   path: /web/sw/-24 }
+  freshness: realtime
+  reviewed_at: 2026-10-02
+
+chem:
+  type: dku_cms
+  kind: department
+  name: 화학공학과
+  college: 공과대학
+  aliases: [화공, 화공과, 화학공학]
+  campus: 죽전
+  office: { tel: "031-8005-3535/3543", room: 제3공학관 217호 }
+  base_url: https://cms.dankook.ac.kr/web/chem
+  description: 화학공학과(죽전) 학과 공지·장학금 공지·대학원 공지·취업정보·교외활동·자료실, 교수, 학부·대학원 교과과정, 장학금 안내, 학부·대학원 운영내규, 대학원 졸업요건, 학석연계
+  sections:
+    notice:      { title: 학과 공지,   path: /web/chem/-10 }
+    scholarship: { title: 장학금 공지, path: /web/chem/-48 }
+    grad:        { title: 대학원 공지, path: /web/chem/-49 }
+    jobs:        { title: 취업정보,   path: /web/chem/-14 }
+    activity:    { title: 교외활동,   path: /web/chem/-11 }
+    archive:     { title: 자료실,     path: /web/chem/-13 }
+    ignore:      { title: 갤러리,     path: /web/chem/-12 }
+  datasets:
+    dept_info:
+      - { path: /web/chem/-7 }
+    professors:
+      - { path: /web/chem/-1 }
+    curriculum:
+      - { path: /web/chem/-2, org: 학부(공과대학) }
+      - { path: /web/chem/-16, org: 대학원 }
+  pages:
+    scholarship:     { title: 학부 장학금 안내,   path: /web/chem/-43 }
+    undergrad_rules: { title: 학부 운영내규,      path: /web/chem/-24 }
+    grad_rules:      { title: 대학원 운영내규,    path: /web/chem/-50 }
+    grad_graduation: { title: 대학원 졸업요건(석·박사), path: /web/chem/-38 }
+    grad_bs_ms:      { title: 대학원 학석연계,    path: /web/chem/-52 }
+    edu_goals:       { title: 교육목표,          path: /web/chem/-21 }
+    research:        { title: 연구분야,          path: /web/chem/-36 }
+    location:        { title: 오시는 길,         path: /web/chem/-51 }
+    staff:           { title: 학사조교,          path: /web/chem/-39 }
+    student_council: { title: 학생회,            path: /web/chem/-9 }
+  freshness: realtime
+  reviewed_at: 2026-10-02
+
+# 학교 공통 정보 (메인 사이트). 2026-10-03 Claude가 구조 확인 후 등록.
+dku_main:
+  type: dku_cms
+  kind: campus
+  name: 단국대학교 학교 공통 정보
+  aliases: [학교, 학사일정, 학교 달력, 학식, 학생식당, 푸드코트, 식당]
+  base_url: https://dankook.ac.kr
+  description: 학교 학사일정(실시간 학교 달력, 올해 학년도)과 학생식당 푸드코트 메뉴·가격·품절 여부(죽전·천안)
+  datasets:
+    calendar:
+      - { path: /-2014- }
+    menu:
+      - { path: /1947_commons, org: 죽전 }
+      - { path: /1947_commons_2, org: 천안 }
+  freshness: realtime
+  reviewed_at: 2026-10-03
