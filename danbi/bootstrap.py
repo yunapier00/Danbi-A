@@ -35,6 +35,7 @@ def build_site_tools(settings: Settings):
     from .crawler.adapters import create_adapter
     from .crawler.cache import Cache
     from .crawler.http import HttpClient
+    from .sources.campus_map import load_campus_map
     from .sources.dept_list import load_dept_list
     from .sources.registry import SourceRegistry
 
@@ -44,10 +45,11 @@ def build_site_tools(settings: Settings):
     c = settings.crawler
     http = HttpClient(c.user_agent, min_interval=c.min_interval, timeout=c.timeout, retries=c.retries)
     cache = Cache(c.cache_path)
+    snapshots = {"campus_map": load_campus_map(settings.sources.campus_map_path)}
     adapters = {}
     for src in sources.web_sources():
         try:
-            adapters[src.id] = create_adapter(src, http, cache)
+            adapters[src.id] = create_adapter(src, http, cache, snapshots)
         except ValueError as e:
             log.warning("%s", e)
     return SiteTools(sources, adapters, settings.agent.inline_source_limit, cache=cache, departments=departments)

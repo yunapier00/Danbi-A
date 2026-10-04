@@ -48,10 +48,41 @@
 - id: facility-building
   type: 시설
   question: 범정관은 어디 있어?
-  expect:
-    sources: [rag:캠퍼스맵]
+  expect:                       # RAG 길 설명(rag:캠퍼스맵)이나 공식 캠퍼스맵 데이터 어느 쪽이든 인정
     forbid: [site]
+    include_any: [정문, 대학본부, map.kakao.com]
     max_tool_calls: 2
+
+- id: facility-dept-room
+  type: 시설
+  question: 학사팀 사무실은 어디에 있어?
+  expect:
+    sources: [data:dku_main/campus_map]
+    include: [범정관, "117"]
+    max_tool_calls: 2
+
+- id: facility-convenience
+  type: 시설
+  question: 소프트웨어ICT관에 편의점 있어?
+  expect:
+    sources: [data:dku_main/campus_map]
+    include: ["115"]
+    max_tool_calls: 2
+
+- id: facility-classroom
+  type: 시설
+  question: 인문관 301호는 몇 층이야?
+  expect:
+    sources: [data:dku_main/campus_map]
+    include: [3층]
+    max_tool_calls: 2
+
+- id: facility-alias
+  type: 시설
+  question: 곰상 어디 있어?
+  expect:
+    include_any: [map.kakao.com, 평화의 광장, 평화의광장]
+    max_tool_calls: 3
 
 - id: dept-notice-deadline
   type: 학과 공지

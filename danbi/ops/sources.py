@@ -15,6 +15,8 @@ _URL_LINE = re.compile(r"(?:^|\]\s)(?:URL|게시판|원문): (https?://[^\s,]+(?
 _SECTION = re.compile(r"^\[source: ([\w.-]+) / section: [\w]+\((.+?)\)\]", re.M)
 _TITLE_LINE = re.compile(r"^(?:제목|게시글 제목): (.+?)(?: \| 작성일.*)?$", re.M)
 _RAG_HIT = re.compile(r"^\(\d+\) (.+?) \| ", re.M)
+# 캠퍼스맵(query_data campus_map): '### 캠퍼스 · 건물' 다음 줄의 '지도: 링크' (링크에 쉼표가 들어 있다)
+_MAP_LINK = re.compile(r"^### (?:[^·\n]+ · )?(.+?)(?: \(별칭: .*\))?\n지도: (https?://\S+)", re.M)
 
 
 @dataclass
@@ -40,8 +42,9 @@ def extract_sources(tool_name: str, text: str) -> list[SourceRef]:
     title = t.group(1).strip() if (t := _TITLE_LINE.search(text)) else ""
     if not title and (sec := _SECTION.search(text)):
         title = f"{sec.group(1)} {sec.group(2)}"  # 게시판 목록: '소스 게시판이름'
-    return [SourceRef("web", source_id, title, url)
-            for line in _URL_LINE.finditer(text) for url in line.group(1).split(", ")]
+    maps = [SourceRef("web", source_id, f"{m.group(1)} 지도", m.group(2)) for m in _MAP_LINK.finditer(text)]
+    return maps + [SourceRef("web", source_id, title, url)
+                   for line in _URL_LINE.finditer(text) for url in line.group(1).split(", ")]
 
 
 def mark_cited(refs: list[SourceRef], answer: str) -> None:

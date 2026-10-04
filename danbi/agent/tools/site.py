@@ -140,17 +140,20 @@ class SiteTools:
                     "웹 소스의 정형 데이터를 조회한다. professors(교수 목록: 직급, 연구실, 전화, 이메일), "
                     "curriculum(교과과정: 이수구분, 학점, 개설 학년-학기, 과목 개요), dept_info(학과 소개·교육목표·진로·사무실 연락처), "
                     "calendar(학교 학사일정: 실시간, 올해 학년도 3월~다음 해 2월, 일정별 시작·종료일), "
-                    "menu(학생식당 푸드코트 메뉴·가격·품절 여부, 캠퍼스별. 날짜별 식단표가 아니라 판매 메뉴 목록). "
+                    "menu(학생식당 푸드코트 메뉴·가격·품절 여부, 캠퍼스별. 날짜별 식단표가 아니라 판매 메뉴 목록), "
+                    "campus_map(학교 공식 캠퍼스맵: 건물 위치와 카카오맵 지도 링크, 건물별 층·호수·부서·편의시설. "
+                    "name=건물, keyword=부서·시설·호수·층(예: 학사팀, 편의점, 301, 2층), category=분류(행정지원, 편의시설, 금융/보건, 식당/매점). "
+                    "건물 사이 걷는 경로는 없으므로 길 안내는 지도 링크로 대신한다). "
                     "조건을 주면 해당하는 것만 돌려준다. 소스별 데이터 목록은 search_site 설명이나 list_sources를 따른다. "
                     "교과과정은 소속(단과대학)별로 다를 수 있으니 결과의 소속을 구분해서 답한다."
                 ),
                 parameters=self._params({
                     "dataset": {"type": "string", "enum": datasets},
-                    "name": {"type": "string", "description": "교수 이름 또는 과목명 (일부만 써도 됨)"},
-                    "keyword": {"type": "string", "description": "과목명·개요(교과과정) 또는 직급·보직·연구실(교수)에서 찾을 말"},
+                    "name": {"type": "string", "description": "교수 이름, 과목명 또는 건물 이름 (일부만 써도 됨)"},
+                    "keyword": {"type": "string", "description": "과목명·개요(교과과정), 직급·보직·연구실(교수) 또는 부서·시설·호수·층(캠퍼스맵)에서 찾을 말"},
                     "grade": {"type": "integer", "description": "교과과정: 학년 (1~6)"},
                     "semester": {"type": "integer", "description": "교과과정: 학기 (1 또는 2)"},
-                    "category": {"type": "string", "description": "교과과정: 이수구분·과정 (예: 전공필수, 전공선택, 교양, 마이크로전공, 트랙)"},
+                    "category": {"type": "string", "description": "교과과정: 이수구분·과정 (예: 전공필수, 전공선택, 교양, 마이크로전공, 트랙). 캠퍼스맵: 시설 분류"},
                     "org": {"type": "string", "description": "소속 또는 캠퍼스 (예: 프리무스국제대학, 죽전, 천안)"},
                     "month": {"type": "integer", "description": "학사일정: 이 달(1~12)과 기간이 겹치는 일정"},
                     "date": {"type": "string", "description": "학사일정: 이 날짜(YYYY-MM-DD)에 진행 중인 일정"},
@@ -225,7 +228,7 @@ class SiteTools:
         return f"{src.name} {sec.title}" if sec else src.name
 
     _DATASET_LABEL = {"professors": "교수 정보", "curriculum": "교과과정", "dept_info": "학과 소개",
-                      "calendar": "학사일정", "menu": "학식 메뉴"}
+                      "calendar": "학사일정", "menu": "학식 메뉴", "campus_map": "캠퍼스맵"}
 
     def _status_data(self, args: dict) -> str:
         label = self._DATASET_LABEL.get(args.get("dataset", ""), "데이터")
@@ -419,7 +422,8 @@ class SiteTools:
         cond = ", ".join(f"{'date' if k == 'on_date' else k}={v}" for k, v in filters.items()) or "없음"
         urls = ", ".join(src.url(e.path) for e in entries)
         years = sorted({r["year"] for r in hits if r.get("year")})
-        basis = f" ({', '.join(years)}학년도 기준)" if years else ""
+        collected = sorted({r["collected_at"] for r in hits if r.get("collected_at")})
+        basis = (f" ({', '.join(years)}학년도 기준)" if years else "") + (f" ({collected[-1]} 수집)" if collected else "")
         head = f"[source: {src.id} / dataset: {dataset}] 조건: {cond} — {len(hits)}건{basis}\n원문: {urls}"
         if not hits:
             return f"{head}\n해당하는 데이터가 없습니다 (전체 {len(records)}건)."

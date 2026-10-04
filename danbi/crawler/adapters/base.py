@@ -66,7 +66,9 @@ class PageDoc:
 #   dept_info:  name, updated, sections(dict 제목→본문), contact(dict 항목→값)
 #   calendar:   title, start(YYYY-MM-DD), end(YYYY-MM-DD), calendar   — 학사일정 (학년도 = 3월~다음 해 2월)
 #   menu:       org(캠퍼스), corner, name, price(int, 원), sold_out(bool)   — 학생식당(푸드코트) 메뉴
-DATASET_KINDS = ("dept_info", "professors", "curriculum", "calendar", "menu")
+#   campus_map: org(캠퍼스), kind(building|room), building, aliases(list), lat, lng, desc, floor, room, name, eng_name,
+#               category, collected_at   — 캠퍼스맵 건물·호실 (sources/campus_map.py 스냅숏)
+DATASET_KINDS = ("dept_info", "professors", "curriculum", "calendar", "menu", "campus_map")
 MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
 
 

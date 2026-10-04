@@ -51,6 +51,7 @@ class SourcesSettings:
     registry_path: Path = PROJECT_ROOT / "config" / "sources.yaml"
     extra_registry_paths: list[Path] = field(default_factory=list)  # 예: 학과 일괄 등록 파일
     dept_list_path: Path = PROJECT_ROOT / "config" / "dept_list.yaml"
+    campus_map_path: Path = PROJECT_ROOT / "config" / "campus_map.yaml"  # scripts.collect_campus_map이 생성
 
     @property
     def registry_paths(self) -> list[Path]:
@@ -145,7 +146,7 @@ def load_settings(path: str | Path | None = None) -> Settings:
     if "chroma_path" in rag_raw:
         rag_raw["chroma_path"] = _resolve(rag_raw["chroma_path"])
     sources_raw = dict(raw.get("sources") or {})
-    for key in ("registry_path", "dept_list_path"):
+    for key in ("registry_path", "dept_list_path", "campus_map_path"):
         if key in sources_raw:
             sources_raw[key] = _resolve(sources_raw[key])
     sources_raw["extra_registry_paths"] = [_resolve(p) for p in sources_raw.get("extra_registry_paths") or []]

@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+import re
+from collections import OrderedDict
+
+from ...sources.campus_map import floor_label, map_link
+
 MAX_ROWS = 100
 SUMMARY_ROWS = 8  # 결과가 이 수 이하이거나 keyword 검색이면 과목 개요도 보여준다
 SUMMARY_CHARS = 150
@@ -26,6 +31,10 @@ def filter_records(kind: str, records: list[dict], *, name: str | None = None, k
             if on_date and not (r["start"] <= on_date <= r["end"]):
                 continue
             out.append(r)
+            continue
+        if kind == "campus_map":
+            if _campus_match(r, name, keyword, category):
+                out.append(r)
             continue
         if kind == "menu":
             if (keyword or name) and not _has(r["name"], keyword or name):
@@ -55,6 +64,36 @@ def filter_records(kind: str, records: list[dict], *, name: str | None = None, k
     return out
 
 
+_FLOOR_Q = re.compile(r"(지하\s*|B)?(\d+)\s*층", re.I)
+
+
+def _building_match(r: dict, q: str) -> bool:
+    return _has(r["building"], q) or any(_has(a, q) for a in r["aliases"])
+
+
+def _room_match(r: dict, q: str) -> bool:
+    if r["kind"] != "room":
+        return False
+    if m := _FLOOR_Q.fullmatch(q.strip()):
+        return r["floor"].upper() == (f"B{m.group(2)}" if m.group(1) else m.group(2))
+    return (_has(r["name"], q) or (bool(r["eng_name"]) and _has(r["eng_name"], q))
+            or (bool(r["category"]) and _has(r["category"], q))  # '식당' → 식당/매점 분류의 1947_commons
+            or r["room"].upper() == q.strip().removesuffix("호").upper())
+
+
+def _campus_match(r: dict, name: str | None, keyword: str | None, category: str | None) -> bool:
+    """name=건물, keyword=부서·시설·호수·층, category=분류. 한 가지만 주면 건물 이름이나 호실 어느 쪽이든 맞으면 된다.
+    건물 자체가 맞으면 그 건물 레코드와 호실 전체를, 호실만 맞으면 그 호실만 고른다. 조건이 없으면 건물 목록만."""
+    if category and not (r["kind"] == "room" and (_has(r["category"], category) or _has(r["name"], category))):
+        return False
+    if name and keyword:
+        return _building_match(r, name) and _room_match(r, keyword)
+    q = name or keyword
+    if q:
+        return _building_match(r, q) or _room_match(r, q)
+    return bool(category) or r["kind"] == "building"
+
+
 def _overlaps_month(r: dict, month: int) -> bool:
     """일정 기간이 그 달(어느 해든 학년도 안의 그 달)과 겹치는지."""
     start, end = r["start"][:7], r["end"][:7]
@@ -67,6 +106,8 @@ def _overlaps_month(r: dict, month: int) -> bool:
 
 
 def format_records(kind: str, records: list[dict], *, verbose: bool = False) -> str:
+    if kind == "campus_map":
+        return _campus_map(records)
     if kind == "calendar":
         lines = [f"- {r['start']}" + (f" ~ {r['end']}" if r["end"] != r["start"] else "") + f" | {r['title']}"
                  for r in records[:MAX_ROWS]]
@@ -125,3 +166,68 @@ def _curriculum(records: list[dict], verbose: bool) -> str:
         if summaries:
             out += "\n\n과목 개요:\n" + "\n".join(summaries)
     return out
+
+
+CAMPUS_LIST_LIMIT = 8      # 건물이 이보다 많으면 링크 없이 이름만 나열한다
+FLOOR_CHARS = 300          # 건물 전체를 보여줄 때 층별 줄의 최대 길이
+
+
+def _room_no(r: dict) -> str:
+    room = r["room"]
+    return "" if not room or re.fullmatch(r"0+\d*", room) else f"{room}호"  # 0001 같은 번호는 시설 표시용
+
+
+def _campus_map(records: list[dict]) -> str:
+    groups: OrderedDict[tuple, list[dict]] = OrderedDict()
+    for r in records:
+        groups.setdefault((r["org"], r["building"]), []).append(r)
+    if len(groups) > CAMPUS_LIST_LIMIT and all(r["kind"] == "building" for r in records):
+        lines = [f"- {r['org']} · {r['building']}" + (f" (별칭: {', '.join(r['aliases'])})" if r["aliases"] else "")
+                 for r in records]
+        return "\n".join(lines + ["(건물 이름을 name으로 주면 지도 링크와 층별 호실을 보여줍니다)"])
+    full = [k for k, rs in groups.items() if any(r["kind"] == "building" for r in rs)]
+    expand = len(full) == 1  # 건물 하나가 통째로 맞았을 때만 층별 호실을 펼친다 (여러 건물이면 너무 길다)
+    out, shown = [], 0
+    for key, rs in groups.items():
+        first = rs[0]
+        alias = f" (별칭: {', '.join(first['aliases'])})" if first["aliases"] else ""
+        out.append(f"### {first['org']} · {first['building']}{alias}")
+        out.append(f"지도: {map_link(first['building'], first['lat'], first['lng'])}")
+        if desc := next((r["desc"] for r in rs if r["kind"] == "building" and r["desc"]), ""):
+            out.append(f"설명: {desc}")
+        rooms = [r for r in rs if r["kind"] == "room" and r["name"] != r["building"]]  # 곰상 = 곰상 같은 중복 제외
+        if key in full and not expand:
+            if rooms:
+                out.append(f"(호실 {len(rooms)}곳 — 건물을 하나로 좁히면 층별로 보여줍니다)")
+            continue
+        if key in full:
+            out += _floors(rooms)
+            continue
+        for r in rooms:
+            if shown >= MAX_ROWS:
+                break
+            shown += 1
+            where = " ".join(x for x in (floor_label(r["floor"]), _room_no(r)) if x)
+            out.append(f"- {where + ' · ' if where else ''}{r['name']}" + (f" [{r['category']}]" if r["category"] else ""))
+    rooms_total = sum(1 for r in records if r["kind"] == "room")
+    if shown >= MAX_ROWS and rooms_total > shown:
+        out.append(f"…(호실 {rooms_total}곳 중 {MAX_ROWS}곳만 표시. name·keyword로 좁히세요)")
+    return "\n".join(out)
+
+
+def _floors(rooms: list[dict]) -> list[str]:
+    """건물 전체: 층별 한 줄 ('강의실'처럼 같은 이름이 여럿이면 묶는다)."""
+    by_floor: OrderedDict[str, OrderedDict[str, list[str]]] = OrderedDict()
+    for r in rooms:
+        by_floor.setdefault(r["floor"], OrderedDict()).setdefault(r["name"], []).append(_room_no(r))
+    lines = []
+    for floor, names in by_floor.items():
+        parts = []
+        for nm, nos in names.items():
+            nos = [n for n in nos if n]
+            parts.append(f"{nm} {nos[0]}" if len(nos) == 1 else f"{nm}({len(nos)}곳)" if nos else nm)
+        text = ", ".join(parts)
+        if len(text) > FLOOR_CHARS:
+            text = text[:FLOOR_CHARS].rsplit(", ", 1)[0] + " …"
+        lines.append(f"- {floor_label(floor) or '층 미상'}: {text}")
+    return lines

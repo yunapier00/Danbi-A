@@ -271,10 +271,12 @@ def _item_from_dict(d: dict) -> Item:
 class DkuCmsAdapter(SiteAdapter):
     supports = {"search", "list", "get_item", "get_page", "get_dataset", "get_attachment"}
 
-    def __init__(self, source: Source, http: HttpClient, cache: Cache):
+    def __init__(self, source: Source, http: HttpClient, cache: Cache,
+                 snapshots: dict[str, list[dict]] | None = None):
         super().__init__(source)
         self.http = http
         self.cache = cache
+        self.snapshots = snapshots or {}
 
     def _list_page(self, url: str, section_url: str, ttl: float) -> ListPage:
         key = f"dku_cms:list:{url}"
@@ -314,6 +316,8 @@ class DkuCmsAdapter(SiteAdapter):
         return page
 
     def get_dataset(self, kind: str, path: str, org: str | None = None) -> list[dict]:
+        if kind in self.snapshots:  # 미리 모아 둔 스냅숏 (캠퍼스맵: 건물마다 요청해야 해서 질문할 때 부르기엔 느리다)
+            return [r for r in self.snapshots[kind] if not org or r.get("org") == org]
         url = self.source.url(path)
         key = f"dku_cms:dataset:{kind}:{org}:{url}"
         if (hit := self.cache.get(key)) is not None:
