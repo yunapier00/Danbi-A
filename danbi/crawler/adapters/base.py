@@ -68,7 +68,10 @@ class PageDoc:
 #   menu:       org(캠퍼스), corner, name, price(int, 원), sold_out(bool)   — 학생식당(푸드코트) 메뉴
 #   campus_map: org(캠퍼스), kind(building|room), building, aliases(list), lat, lng, desc, floor, room, name, eng_name,
 #               category, collected_at   — 캠퍼스맵 건물·호실 (sources/campus_map.py 스냅숏)
-DATASET_KINDS = ("dept_info", "professors", "curriculum", "calendar", "menu", "campus_map")
+#   timetable:  subj_id, section, name, english(bool), credits, design, professor, slots(list: day, start, end, from, to,
+#               room_raw, building, room), change, note, mode, targets(list: grade, category, org), main_org,
+#               org(수강조직 이어 붙임), term, collected_at   — 종합강의시간표 강좌 (sources/timetable.py 저장본)
+DATASET_KINDS = ("dept_info", "professors", "curriculum", "calendar", "menu", "campus_map", "timetable")
 MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
 
 

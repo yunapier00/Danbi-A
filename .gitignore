@@ -21,3 +21,6 @@ CLAUDE.md
 
 # 로고 원본 (6MB, 화면에는 frontend/src/assets의 가공본을 쓴다)
 Danbi_image.png
+
+# 강의시간표 원본 저장 화면 (사람이 브라우저에서 저장; scripts.build_timetable 입력, 저장소에 올리지 않음)
+/*.do

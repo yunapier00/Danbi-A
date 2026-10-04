@@ -5,6 +5,7 @@
 
 import pytest
 
+from danbi.bootstrap import load_snapshots
 from danbi.config import load_settings
 from danbi.crawler.adapters import create_adapter
 from danbi.crawler.cache import Cache
@@ -16,6 +17,7 @@ pytestmark = pytest.mark.live
 settings = load_settings()
 registry = SourceRegistry.load(*settings.sources.registry_paths)
 http = HttpClient(settings.crawler.user_agent, min_interval=settings.crawler.min_interval)
+snapshots = load_snapshots(settings)  # 캠퍼스맵·강의시간표는 저장본이 비어 있지 않은지만 본다 (시간표 서버는 robots.txt로 막혀 있음)
 
 
 @pytest.mark.parametrize("source", [s for s in registry.web_sources() if "notice" in {x.role for x in s.sections.values()}],
@@ -38,7 +40,7 @@ def test_all_sections_are_boards(source):
 
 @pytest.mark.parametrize("source", [s for s in registry.web_sources() if s.datasets or s.pages], ids=lambda s: s.id)
 def test_datasets_and_pages_parse(source):
-    adapter = create_adapter(source, http, Cache(None))
+    adapter = create_adapter(source, http, Cache(None), snapshots)
     for kind, entries in source.datasets.items():
         records = [r for e in entries for r in adapter.get_dataset(kind, e.path, e.org)]
         assert records, f"{source.id} {kind} 데이터가 비었습니다"

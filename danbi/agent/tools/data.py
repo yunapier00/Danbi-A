@@ -36,6 +36,13 @@ def filter_records(kind: str, records: list[dict], *, name: str | None = None, k
             if _campus_match(r, name, keyword, category):
                 out.append(r)
             continue
+        if kind == "timetable":
+            if _timetable_match(r, name, keyword, grade, category, org):
+                if grade or category or org:  # 조건에 맞는 수강대상을 앞으로 (레코드는 공유되므로 복사본에서)
+                    hit = lambda t: _target_hit(t, grade, category, org)  # noqa: E731
+                    r = {**r, "targets": sorted(r["targets"], key=lambda t: not hit(t))}
+                out.append(r)
+            continue
         if kind == "menu":
             if (keyword or name) and not _has(r["name"], keyword or name):
                 continue
@@ -108,6 +115,8 @@ def _overlaps_month(r: dict, month: int) -> bool:
 def format_records(kind: str, records: list[dict], *, verbose: bool = False) -> str:
     if kind == "campus_map":
         return _campus_map(records)
+    if kind == "timetable":
+        return _timetable(records)
     if kind == "calendar":
         lines = [f"- {r['start']}" + (f" ~ {r['end']}" if r["end"] != r["start"] else "") + f" | {r['title']}"
                  for r in records[:MAX_ROWS]]
@@ -231,3 +240,67 @@ def _floors(rooms: list[dict]) -> list[str]:
             text = text[:FLOOR_CHARS].rsplit(", ", 1)[0] + " …"
         lines.append(f"- {floor_label(floor) or '층 미상'}: {text}")
     return lines
+
+
+# ---- 강의시간표 ----
+
+MAX_SECTIONS = 40          # 분반이 이보다 많으면 앞부분만 보여주고 좁히라고 안내한다
+TARGETS_SHOWN = 2          # 분반마다 보여줄 수강대상 수 (나머지는 '외 n곳')
+_DAY_Q = re.compile(r"([월화수목금토일])(?:요일)?")
+
+
+def _timetable_match(r: dict, name: str | None, keyword: str | None, grade: int | None,
+                     category: str | None, org: str | None) -> bool:
+    """name=과목명·교강사, keyword=요일·강의실·교과목번호·비고. 학년·이수구분·수강조직은 같은 수강대상 하나가 모두 맞아야 한다."""
+    if name and not (_has(r["name"], name) or _has(r["professor"], name)):
+        return False
+    if keyword:
+        kw = keyword.strip().removesuffix("호")
+        if m := _DAY_Q.fullmatch(kw):
+            if not any(s["day"] == m.group(1) for s in r["slots"]):
+                return False
+        elif not (any(_has(r[k], kw) for k in ("name", "professor", "subj_id", "note", "change", "mode"))
+                  or any(_has(s["room_raw"], kw) or _has(f"{s['building'] or ''}{s['room']}", kw) for s in r["slots"])):
+            return False
+    if grade or category or org:
+        return any(_target_hit(t, grade, category, org) for t in r["targets"])
+    return True
+
+
+def _target_hit(t: dict, grade: int | None, category: str | None, org: str | None) -> bool:
+    return ((not grade or t["grade"] == str(grade)) and (not category or _has(t["category"], category))
+            and (not org or _has(t["org"], org)))
+
+
+def _slot_text(s: dict) -> str:
+    where = f"{s['building']} {s['room']}호" if s["building"] else s["room_raw"]
+    return f"{s['day']} {s['from']}–{s['to']} ({s['start']}~{s['end']}교시)" + (f" {where}" if where else "")
+
+
+def _targets_text(targets: list[dict]) -> str:
+    shown = [f"{t['grade']}학년 {t['org']}" if t["grade"] and t["grade"] != "0" else t["org"] for t in targets]
+    shown = list(dict.fromkeys(shown))
+    more = f" 외 {len(shown) - TARGETS_SHOWN}곳" if len(shown) > TARGETS_SHOWN else ""
+    return ", ".join(shown[:TARGETS_SHOWN]) + more
+
+
+def _timetable(records: list[dict]) -> str:
+    """과목별로 묶고 분반마다 한 줄: 교강사 | 요일·시각·강의실 | 수강대상 | 비고."""
+    groups: OrderedDict[str, list[dict]] = OrderedDict()
+    for r in records[:MAX_SECTIONS]:
+        groups.setdefault(r["subj_id"], []).append(r)
+    out = []
+    for rs in groups.values():
+        first = rs[0]
+        cats = list(dict.fromkeys(t["category"] for r in rs for t in r["targets"] if t["category"]))
+        credit = f"{first['credits']}학점" + (f"(설계 {first['design']})" if first["design"] else "")
+        out.append(f"### {first['name']} · {first['subj_id']} · {credit}" + (f" · {'/'.join(cats[:3])}" if cats else ""))
+        for r in rs:
+            times = " / ".join(_slot_text(s) for s in r["slots"]) or "시간 미정"
+            extra = [x for x in ("영어강의" if r["english"] else "", r["mode"] if r["mode"] != "대면수업" else "",
+                                 f"비고: {r['note']}" if r["note"] else "", f"변경: {r['change']}" if r["change"] else "") if x]
+            out.append(f"- {r['section']}분반 {r['professor'] or '교강사 미정'} | {times} | 대상: {_targets_text(r['targets'])}"
+                       + (f" | {' | '.join(extra)}" if extra else ""))
+    if len(records) > MAX_SECTIONS:
+        out.append(f"…(분반 {len(records)}개 중 {MAX_SECTIONS}개만 표시. 과목명·교강사·학년·수강조직(org)·요일로 좁히세요)")
+    return "\n".join(out)

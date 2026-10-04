@@ -118,3 +118,19 @@ dku_main:
       - { path: /campusmap, org: 죽전 }
   freshness: realtime
   reviewed_at: 2026-10-03
+
+# 종합강의시간표 (죽전). webinfo는 robots.txt가 수집을 막으므로 단비는 이 서버에 요청하지 않는다.
+# 사람이 학기마다 조회 화면을 저장 → scripts.build_timetable → config/timetable.json 저장본만 읽는다.
+dku_timetable:
+  type: dku_cms
+  kind: campus
+  campus: 죽전
+  name: 단국대학교 종합강의시간표
+  aliases: [시간표, 강의시간표, 수업시간, 강의실, 개설강좌, 분반]
+  base_url: https://webinfo.dankook.ac.kr
+  description: 이번 학기 죽전 종합강의시간표 저장본(교양·전공·학문기초 개설 강좌의 교강사, 요일·시간, 강의실, 학점, 이수구분, 수강대상, 비고)
+  datasets:
+    timetable:
+      - { path: /tiac/univ/lssn/lpci/views/lssnPopup/tmtbl.do }
+  freshness: static
+  reviewed_at: 2026-10-05

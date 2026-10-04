@@ -30,12 +30,20 @@ def build_tools(settings: Settings) -> ToolRegistry:
     return registry
 
 
+def load_snapshots(settings: Settings) -> dict[str, list[dict]]:
+    """등록 시점 스크립트가 미리 만들어 둔 데이터셋 (질문할 때 사이트를 부르지 않는다)."""
+    from .sources.campus_map import load_campus_map
+    from .sources.timetable import load_timetable
+
+    return {"campus_map": load_campus_map(settings.sources.campus_map_path),
+            "timetable": load_timetable(settings.sources.timetable_path)}
+
+
 def build_site_tools(settings: Settings):
     from .agent.tools.site import SiteTools
     from .crawler.adapters import create_adapter
     from .crawler.cache import Cache
     from .crawler.http import HttpClient
-    from .sources.campus_map import load_campus_map
     from .sources.dept_list import load_dept_list
     from .sources.registry import SourceRegistry
 
@@ -45,7 +53,7 @@ def build_site_tools(settings: Settings):
     c = settings.crawler
     http = HttpClient(c.user_agent, min_interval=c.min_interval, timeout=c.timeout, retries=c.retries)
     cache = Cache(c.cache_path)
-    snapshots = {"campus_map": load_campus_map(settings.sources.campus_map_path)}
+    snapshots = load_snapshots(settings)
     adapters = {}
     for src in sources.web_sources():
         try:

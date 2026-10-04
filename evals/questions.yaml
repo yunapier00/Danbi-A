@@ -263,3 +263,28 @@
     sources: [rag]               # 도서관 사이트는 robots.txt가 수집을 막아 문서 자료(RAG)로 답한다
     forbid: [site]
     max_tool_calls: 3
+
+- id: timetable-course
+  type: 강의시간표
+  question: 이산수학 월요일 수업은 누가 어디서 해?
+  expect:
+    sources: [data:dku_timetable/timetable]
+    include: [김형돈, "307"]
+    max_tool_calls: 2
+
+- id: timetable-dept
+  type: 강의시간표
+  question: 컴퓨터공학과 3학년 이번 학기 전공필수 과목 뭐 있어?
+  expect:
+    sources: [data:dku_timetable/timetable]
+    include: [기본컴퓨터공학실험2]
+    max_tool_calls: 3
+
+- id: timetable-room
+  type: 강의시간표
+  question: Critical Thinking 수업 강의실이 어디야?
+  expect:
+    sources: [data:dku_timetable/timetable]
+    include: ["320"]
+    include_any: [인문관, 인문]
+    max_tool_calls: 3
