@@ -1,7 +1,6 @@
 /* 색 토큰: dataviz 기준 팔레트 (series 1·2는 validate_palette.js로 라이트·다크 검증함) */
 .dev-root {
   color-scheme: light;
-  --logo-1: #38bdf8; --logo-2: #1d4ed8;
   --page: #f9f9f7; --surface: #fcfcfb; --raised: #ffffff;
   --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
   --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11, 11, 11, 0.10);

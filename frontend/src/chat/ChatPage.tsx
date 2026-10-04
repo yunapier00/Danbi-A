@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent, type Keyboard
 import {
   AlertIcon, CheckIcon, ClockIcon, ExternalIcon, LinkIcon, PlusIcon, SearchIcon, SendIcon, ThumbDownIcon, ThumbUpIcon,
 } from "../components/icons";
-import { Logo } from "../components/Logo";
+import { Logo, LogoMark } from "../components/Logo";
 import { Markdown } from "../lib/markdown";
 import { readSSE } from "../lib/sse";
 import "./chat.css";
@@ -129,11 +129,9 @@ export default function ChatPage() {
     <div className="chat-root">
       <header className="topbar">
         <div className="brand">
-          <span className="brand-mark"><Logo size={26} /></span>
-          <span className="brand-text">
-            <strong>단비</strong>
-            <small>단국대학교 비서 AI</small>
-          </span>
+          <Logo height={26} />
+          <span className="brand-sep" aria-hidden="true" />
+          <small className="brand-sub">단국대학교 비서 AI</small>
         </div>
         <button className="new-chat" type="button" onClick={reset} disabled={messages.length === 0 && !busy}>
           <PlusIcon /> 새 대화
@@ -181,7 +179,7 @@ function BotBubble({ m }: { m: BotMessage }) {
   const thinking = m.status !== null && !m.text && !m.error;
   return (
     <div className="row row-bot">
-      <span className="avatar" aria-hidden="true"><Logo size={18} /></span>
+      <span className="avatar" aria-hidden="true"><LogoMark size={18} /></span>
       <div className="bubble bot">
         {thinking && (
           <div className="thinking" role="status">

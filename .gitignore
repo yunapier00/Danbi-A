@@ -18,3 +18,6 @@ frontend/node_modules/
 # Claude Code 지침 파일 (로컬 전용)
 CLAUDE.md
 .claude/
+
+# 로고 원본 (6MB, 화면에는 frontend/src/assets의 가공본을 쓴다)
+Danbi_image.png

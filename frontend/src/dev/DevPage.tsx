@@ -102,7 +102,7 @@ export default function DevPage() {
     return (
       <div className="dev-root">
         <section className="login">
-          <div className="login-brand"><Logo size={34} /><h1>단비 LLMOps</h1></div>
+          <div className="login-brand"><Logo height={30} /><h1>LLMOps</h1></div>
           <p>개발자 전용 페이지입니다. 서버의 <code>DANBI_ADMIN_TOKEN</code> 값을 입력하세요. 접근은 감사 로그에 남습니다.</p>
           <form onSubmit={submitLogin}>
             <input name="token" type="password" autoComplete="current-password" placeholder="관리자 토큰" required />
@@ -119,7 +119,7 @@ export default function DevPage() {
       <TooltipProvider>
         <header>
           <div className="bar">
-            <h1><Logo size={22} /> 단비 LLMOps<small>개발자 전용</small></h1>
+            <h1><Logo height={20} /> LLMOps<small>개발자 전용</small></h1>
             <nav role="tablist">
               {([["overview", "개요"], ["runs", "실행 기록"], ["audit", "감사 로그"]] as [Tab, string][]).map(([k, label]) => (
                 <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{label}</button>
