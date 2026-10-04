@@ -1,6 +1,7 @@
 import json
 from datetime import date
 from pathlib import Path
+from urllib.parse import quote
 
 import pytest
 import yaml
@@ -58,6 +59,10 @@ def test_aliases_floor_label_and_map_link():
     assert (floor_label("B1"), floor_label("3"), floor_label("71"), floor_label("")) == ("지하 1층", "3층", "", "")
     link = map_link("소프트웨어 ICT관", 37.32, 127.12)
     assert link.startswith("https://map.kakao.com/link/map/") and " " not in link and link.endswith(",37.32,127.12")
+    # '/'가 들어간 이름은 카카오에서 404가 난다 (2026-10-05 확인) → '·'로 바꾼다. ','도 좌표 구분자라 뺀다
+    slash = map_link("법학관/대학원동", 37.3211, 127.1292)
+    assert "%2F" not in slash and quote("법학관·대학원동", safe="") in slash
+    assert map_link("가,나", 1, 2).count(",") == 2
 
 
 # ---- 스냅숏 → query_data ----

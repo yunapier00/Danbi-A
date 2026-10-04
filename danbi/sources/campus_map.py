@@ -116,8 +116,10 @@ def aliases_of(name: str) -> list[str]:
 
 
 def map_link(name: str, lat: float, lng: float) -> str:
-    """카카오맵 위치 링크 (열면 그 자리에 핀이 찍히고 길찾기를 할 수 있다)."""
-    return f"https://map.kakao.com/link/map/{quote(name, safe='')},{lat},{lng}"
+    """카카오맵 위치 링크 (열면 그 자리에 핀이 찍히고 길찾기를 할 수 있다).
+    이름의 '/'는 %2F로 바꿔도 카카오가 경로로 읽어 404가 되고('법학관/대학원동'), ','는 이름·좌표 구분자와 겹친다."""
+    label = re.sub(r"\s*/\s*", "·", name).replace(",", " ")
+    return f"https://map.kakao.com/link/map/{quote(label, safe='')},{lat},{lng}"
 
 
 def load_campus_map(path: Path) -> list[dict]:
