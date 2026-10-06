@@ -24,14 +24,14 @@ export function RunsList({ api, query, tick, offset, setOffset, onOpen, onError 
   return (
     <div className={`card ${loading ? "loading" : ""}`}>
       <table className="runs-table">
-        <thead><tr><th>시각</th><th>채널</th><th>IP</th><th>질문</th><th>상태</th><th className="num">응답</th>
+        <thead><tr><th>시각</th><th>채널</th><th>사용자 / IP</th><th>질문</th><th>상태</th><th className="num">응답</th>
           <th className="num">도구</th><th className="num">토큰</th><th>평가</th></tr></thead>
         <tbody>
           {data.items.length === 0 && <tr><td colSpan={9} className="empty">조건에 맞는 실행이 없습니다</td></tr>}
           {data.items.map((r) => (
             <tr key={r.id} tabIndex={0} onClick={() => onOpen(r.id)} onKeyDown={(e) => e.key === "Enter" && onOpen(r.id)}>
               <td>{when(r.started_at)}</td><td>{CHANNEL[r.channel] || r.channel}</td>
-              <td className="muted">{r.client_ip || ""}</td>
+              <td className="muted" title={r.client_ip || ""}>{r.user_email || r.client_ip || ""}</td>
               <td className="q" title={r.question}>{r.question}</td><td><StatusBadge status={r.status} /></td>
               <td className="num">{ms(r.latency_ms)}</td>
               <td className="num">{r.tool_calls}{r.tool_errors ? ` (오류 ${r.tool_errors})` : ""}</td>
@@ -90,6 +90,7 @@ export function RunDetail({ api, id, onBack, onOpen, onError }: {
           <div><span>시각</span>{when(r.started_at)}</div>
           <div><span>채널</span>{CHANNEL[r.channel] || r.channel}</div>
           <div><span>클라이언트 IP</span>{r.client_ip || "–"}</div>
+          {d.user && <div><span>사용자</span>{d.user.name ? `${d.user.name} · ` : ""}{d.user.email}{d.user.blocked ? " (차단됨)" : ""}</div>}
           {r.user_key && <div><span>사용자 키</span><code>{r.user_key}</code></div>}
           <div><span>모델</span>{r.provider}/{r.model}</div>
           <div><span>응답 시간</span>{ms(r.latency_ms)} (첫 글자 {ms(r.first_token_ms)})</div>

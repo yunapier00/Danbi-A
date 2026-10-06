@@ -16,7 +16,8 @@ dependencies = [
     "olefile>=0.47",     # 첨부 HWP 5.0 (레코드는 직접 파싱)
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
-    "httpx>=0.27",       # 카카오 콜백 전송
+    "httpx>=0.27",       # 카카오 콜백·Google 토큰 교환
+    "google-auth>=2.30", # Google 로그인 ID 토큰 서명 검증 (Apache-2.0)
 ]
 
 [project.optional-dependencies]

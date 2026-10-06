@@ -19,7 +19,7 @@ import threading
 import time
 from pathlib import Path
 
-SCHEMA_VERSION = 3  # 2: runs.client_ip, 3: runs.user_key
+SCHEMA_VERSION = 4  # 2: runs.client_ip, 3: runs.user_key, 4: users·auth_sessions (Google 로그인)
 MAX_TEXT = 50_000  # 도구 결과·답변 저장 상한 (감사용으로 거의 전부 남긴다)
 
 SCHEMA = """
@@ -62,8 +62,8 @@ CREATE TABLE IF NOT EXISTS runs (
     cached_tokens   INTEGER DEFAULT 0,
     cost_usd        REAL,
     tags            TEXT,                   -- JSON (예: {"eval_id": "..."})
-    client_ip       TEXT,                   -- 웹 채널 요청 IP (ops.ip_retention_days 뒤 purge가 지움)
-    user_key        TEXT                    -- 카카오 사용자 키의 해시 (원래 키는 저장하지 않음)
+    client_ip       TEXT,                   -- 웹 채널 요청 IP (ops.ip_retention_days를 정하면 purge가 지움)
+    user_key        TEXT                    -- google:<users.id> | kakao:<해시> | ip:<해시> (카카오 원래 키는 저장하지 않음)
 );
 CREATE TABLE IF NOT EXISTS llm_calls (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -124,7 +124,29 @@ CREATE TABLE IF NOT EXISTS audit_log (
     prev_hash   TEXT NOT NULL,
     hash        TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS users (                 -- Google 로그인 사용자 (runs.user_key = 'google:<id>')
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    google_sub    TEXT NOT NULL UNIQUE,             -- Google 고유 ID (이메일은 바뀔 수 있어 식별에 쓰지 않음)
+    email         TEXT NOT NULL,
+    name          TEXT,
+    hd            TEXT,                             -- Google Workspace 도메인
+    role          TEXT NOT NULL DEFAULT 'user',
+    blocked       INTEGER NOT NULL DEFAULT 0,
+    created_at    REAL NOT NULL,
+    first_ip      TEXT,
+    last_login_at REAL,
+    last_ip       TEXT
+);
+CREATE TABLE IF NOT EXISTS auth_sessions (         -- 로그인 세션. 쿠키 값은 저장하지 않고 SHA-256 해시만 둔다
+    id_hash       TEXT PRIMARY KEY,
+    user_id       INTEGER NOT NULL REFERENCES users(id),
+    created_at    REAL NOT NULL,
+    last_seen_at  REAL NOT NULL,
+    expires_at    REAL NOT NULL,
+    ip            TEXT
+);
 CREATE INDEX IF NOT EXISTS idx_runs_started ON runs(started_at);
+CREATE INDEX IF NOT EXISTS idx_auth_user ON auth_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_runs_conv ON runs(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_llm_run ON llm_calls(run_id);
 CREATE INDEX IF NOT EXISTS idx_tool_run ON tool_calls(run_id);
@@ -407,14 +429,17 @@ class TraceStore:
             where += " AND EXISTS (SELECT 1 FROM tool_calls t WHERE t.run_id = r.id AND t.name = ?)"
             params.append(tool)
         if q:
-            where += " AND (r.question LIKE ? OR r.answer LIKE ? OR r.id LIKE ? OR r.client_ip = ? OR r.user_key = ?)"
-            params += [f"%{q}%", f"%{q}%", f"{q}%", q, q]
-        total = (self._one(f"SELECT COUNT(*) AS n FROM runs r WHERE {where}", params) or {}).get("n", 0)
+            where += (" AND (r.question LIKE ? OR r.answer LIKE ? OR r.id LIKE ? OR r.client_ip = ? OR r.user_key = ?"
+                      " OR u.email LIKE ?)")
+            params += [f"%{q}%", f"%{q}%", f"{q}%", q, q, f"%{q}%"]
+        joined = f"FROM runs r LEFT JOIN users u ON r.user_key = 'google:' || u.id WHERE {where}"
+        total = (self._one(f"SELECT COUNT(*) AS n {joined}", params) or {}).get("n", 0)
         rows = self._all(
             f"SELECT r.id, r.conversation_id, r.turn, r.channel, r.question, r.status, r.model, r.started_at, "
             f"r.latency_ms, r.tool_calls, r.tool_errors, r.input_tokens, r.output_tokens, r.client_ip, "
+            f"u.email AS user_email, "
             f"(SELECT SUM(rating) FROM feedback f WHERE f.run_id = r.id) AS feedback "
-            f"FROM runs r WHERE {where} ORDER BY r.started_at DESC LIMIT ? OFFSET ?", [*params, limit, offset])
+            f"{joined} ORDER BY r.started_at DESC LIMIT ? OFFSET ?", [*params, limit, offset])
         return {"total": total, "items": rows}
 
     def run_detail(self, run_id: str) -> dict | None:
@@ -428,14 +453,58 @@ class TraceStore:
         tools = self._all("SELECT * FROM tool_calls WHERE run_id = ? ORDER BY started_at, id", (run_id,))
         for t in tools:
             t["arguments"] = json.loads(t["arguments"] or "{}")
+        user = None
+        if (run.get("user_key") or "").startswith("google:"):
+            user = self._one("SELECT id, email, name, hd, blocked FROM users WHERE 'google:' || id = ?", (run["user_key"],))
         return {
-            "run": run, "llm_calls": llm, "tool_calls": tools,
+            "run": run, "user": user, "llm_calls": llm, "tool_calls": tools,
             "sources": self._all("SELECT * FROM sources WHERE run_id = ? ORDER BY id", (run_id,)),
             "feedback": self._all("SELECT * FROM feedback WHERE run_id = ? ORDER BY id", (run_id,)),
             "conversation": self._all(
                 "SELECT id, turn, question, status, started_at FROM runs WHERE conversation_id = ? ORDER BY turn",
                 (run["conversation_id"],)) if run["conversation_id"] else [],
         }
+
+    # --- 로그인 (Google) -------------------------------------------------------------
+
+    def upsert_user(self, *, google_sub: str, email: str, name: str | None, hd: str | None, ip: str | None) -> dict:
+        """로그인할 때마다 이메일·이름·마지막 IP를 갱신한다. 처음이면 만든다."""
+        now = time.time()
+        with self._lock:
+            self._db.execute(
+                "INSERT INTO users (google_sub, email, name, hd, created_at, first_ip, last_login_at, last_ip) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(google_sub) DO UPDATE SET email = excluded.email, "
+                "name = excluded.name, hd = excluded.hd, last_login_at = excluded.last_login_at, last_ip = excluded.last_ip",
+                (google_sub, email, name, hd, now, ip, now, ip))
+            self._db.commit()
+        return self._one("SELECT * FROM users WHERE google_sub = ?", (google_sub,))
+
+    def create_session(self, user_id: int, id_hash: str, ttl: float, ip: str | None) -> None:
+        now = time.time()
+        self._exec("INSERT INTO auth_sessions (id_hash, user_id, created_at, last_seen_at, expires_at, ip) "
+                   "VALUES (?, ?, ?, ?, ?, ?)", (id_hash, user_id, now, now, now + ttl, ip))
+
+    def session_user(self, id_hash: str) -> dict | None:
+        """유효한 세션이면 사용자 + session_created_at·session_last_seen_at. 만료·차단이면 None."""
+        return self._one(
+            "SELECT u.*, s.created_at AS session_created_at, s.last_seen_at AS session_last_seen_at "
+            "FROM auth_sessions s JOIN users u ON u.id = s.user_id "
+            "WHERE s.id_hash = ? AND s.expires_at > ? AND u.blocked = 0", (id_hash, time.time()))
+
+    def touch_session(self, id_hash: str, ttl: float) -> None:
+        """쓸 때마다 만료를 미룬다 (슬라이딩 만료)."""
+        now = time.time()
+        self._exec("UPDATE auth_sessions SET last_seen_at = ?, expires_at = ? WHERE id_hash = ?", (now, now + ttl, id_hash))
+
+    def delete_session(self, id_hash: str) -> None:
+        self._exec("DELETE FROM auth_sessions WHERE id_hash = ?", (id_hash,))
+
+    def set_user_blocked(self, user_id: int, blocked: bool) -> None:
+        with self._lock:
+            self._db.execute("UPDATE users SET blocked = ? WHERE id = ?", (int(blocked), user_id))
+            if blocked:
+                self._db.execute("DELETE FROM auth_sessions WHERE user_id = ?", (user_id,))
+            self._db.commit()
 
     def prompt_version(self, h: str) -> dict | None:
         return self._one("SELECT * FROM prompt_versions WHERE hash = ?", (h,))
@@ -446,14 +515,18 @@ class TraceStore:
         for r in self._all(f"SELECT id FROM runs r WHERE {where} ORDER BY started_at", params):
             yield self.run_detail(r["id"])
 
-    def purge(self, older_than_days: float, ip_older_than_days: float | None = None) -> int:
+    def purge(self, older_than_days: float | None, ip_older_than_days: float | None = None) -> int:
         """보관 기간이 지난 실행과 하위 기록을 지운다. IP는 더 짧은 기간 뒤 실행에서 지운다(비움).
-        감사 로그는 지우지 않는다."""
-        cutoff = time.time() - older_than_days * 86400
+        기간이 None이면 그 항목은 지우지 않는다 (무기한). 감사 로그는 지우지 않는다."""
         with self._lock:
             if ip_older_than_days is not None:
                 self._db.execute("UPDATE runs SET client_ip = NULL WHERE client_ip IS NOT NULL AND started_at < ?",
                                  (time.time() - ip_older_than_days * 86400,))
+            if older_than_days is None:
+                self._db.commit()
+                return 0
+        cutoff = time.time() - older_than_days * 86400
+        with self._lock:
             ids = [r[0] for r in self._db.execute("SELECT id FROM runs WHERE started_at < ?", (cutoff,)).fetchall()]
             for table in ("sources", "feedback", "tool_calls", "llm_calls"):
                 self._db.execute(f"DELETE FROM {table} WHERE run_id IN (SELECT id FROM runs WHERE started_at < ?)",

@@ -99,6 +99,14 @@
 .dev-root .login-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .dev-root .login p { color: var(--ink-2); margin: 0 0 16px; font-size: 13px; }
 .dev-root .login form { display: flex; gap: 8px; }
+.dev-root .token-login { margin-top: 16px; font-size: 13px; color: var(--ink-2); }
+.dev-root .token-login summary { cursor: pointer; margin-bottom: 8px; }
+.dev-root .actor { color: var(--ink-2); font-size: 12px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dev-root .google-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px; height: 40px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--raised); color: var(--ink); font-weight: 600; font-size: 14px; text-decoration: none;
+}
+.dev-root .google-btn:hover { border-color: var(--ink-2); }
 .dev-root .login input { flex: 1; }
 .dev-root .err { color: var(--critical); font-size: 13px; margin-top: 10px; min-height: 1.2em; }
 .dev-root .loading { opacity: 0.55; transition: opacity .15s; }

@@ -1,7 +1,7 @@
 """개발자 전용 API (/api/admin/*)와 페이지(/dev).
 
-인증: `Authorization: Bearer <DANBI_ADMIN_TOKEN>`. 토큰이 설정되지 않았으면 전부 503으로 막는다.
-쿠키를 쓰지 않으므로 다른 사이트가 개발자 권한으로 요청을 위조할 수 없다(CSRF 없음).
+인증: Google 로그인 + 관리자 목록(DANBI_ADMIN_EMAILS), 또는 비상용 `Authorization: Bearer <DANBI_ADMIN_TOKEN>`.
+둘 다 없으면 전부 503. 로그인 쿠키를 쓰는 쓰기 요청은 main.py의 같은 출처 검사가 CSRF를 막는다 (관리 API는 읽기만 한다).
 
 감사: 인증 실패, 개별 실행·프롬프트 원문 열람, 내보내기, 감사 로그 검증을 audit_log에 남긴다.
 집계 화면(개요·목록)은 자동 새로고침이 잦아 감사 대상에서 뺐다.
@@ -33,10 +33,16 @@ def _period(range_: str, since: float | None, until: float | None) -> tuple[floa
 
 
 def mount_admin(app: FastAPI, store: TraceStore, token: str | None, *,
-                client_of: Callable[[Request], str] | None = None, fail_limiter=None) -> None:
-    """fail_limiter: IP별 토큰 실패 허용 횟수 (RateLimiter). 넘으면 429로 막고 감사 로그도 더 쌓지 않는다."""
+                client_of: Callable[[Request], str] | None = None, fail_limiter=None,
+                admin_status: Callable[[Request], tuple[str | None, str | None]] | None = None,
+                admin_emails_set: bool = False) -> None:
+    """두 가지 인증:
+    - Google 로그인 + 관리자 목록(DANBI_ADMIN_EMAILS): admin_status가 ('ok', 이메일)이면 통과. 감사 로그에 이메일이 남는다.
+    - 비상용 토큰(DANBI_ADMIN_TOKEN): `Authorization: Bearer …`. 비워 두면 꺼진다.
+    fail_limiter: IP별 토큰 실패 허용 횟수 (RateLimiter). 넘으면 429로 막고 감사 로그도 더 쌓지 않는다."""
     router = APIRouter(prefix="/api/admin")
     fingerprint = hashlib.sha256(token.encode()).hexdigest()[:8] if token else ""
+    google_admin = admin_status is not None and admin_emails_set
 
     def client(request: Request) -> str:
         if client_of is not None:
@@ -44,12 +50,25 @@ def mount_admin(app: FastAPI, store: TraceStore, token: str | None, *,
         return request.client.host if request.client else ""
 
     def require_admin(request: Request) -> str:
-        if not token:
-            raise HTTPException(503, "개발자 페이지가 꺼져 있습니다. .env에 DANBI_ADMIN_TOKEN을 설정하세요.")
+        if not token and not google_admin:
+            raise HTTPException(503, "개발자 페이지가 꺼져 있습니다. DANBI_ADMIN_EMAILS(Google 로그인) 또는 "
+                                     "DANBI_ADMIN_TOKEN을 설정하세요.")
         ip = client(request)
+        given = request.headers.get("authorization", "")
+        if google_admin and not given:
+            status, email = admin_status(request)
+            if status == "ok":
+                return f"google:{email}"
+            if status == "stale":
+                raise HTTPException(401, "개발자 페이지는 로그인한 지 오래되면 다시 로그인해야 합니다.")
+            if status == "not_admin":
+                store.audit(f"google:{email}", "auth_failed", request.url.path, client=ip)
+                raise HTTPException(403, "관리자 계정이 아닙니다.")
+            raise HTTPException(401, "로그인이 필요합니다.")
+        if not token:
+            raise HTTPException(401, "로그인이 필요합니다.")
         if fail_limiter is not None and not fail_limiter.check(ip):
             raise HTTPException(429, "토큰 입력 실패가 많습니다. 10분 뒤에 다시 시도하세요.")
-        given = request.headers.get("authorization", "")
         given = given[7:] if given.lower().startswith("bearer ") else ""
         if not hmac.compare_digest(given.encode(), token.encode()):
             if fail_limiter is not None:

@@ -43,10 +43,14 @@ def main() -> None:
         sys.exit(0 if result["ok"] else 1)
     elif args.cmd == "purge":
         days = args.days if args.days is not None else settings.ops.retention_days
+        if days is None and settings.ops.ip_retention_days is None:
+            print("보관 기간이 무기한으로 설정돼 있어 지울 것이 없습니다 (--days N으로 직접 지정 가능).")
+            return
         n = store.purge(days, settings.ops.ip_retention_days)
         store.audit(actor, "purge", f"older_than_days={days}",
                     {"deleted_runs": n, "ip_older_than_days": settings.ops.ip_retention_days})
-        print(f"{days}일보다 오래된 실행 {n}건을 삭제했습니다 (감사 로그는 유지).")
+        print(f"{days}일보다 오래된 실행 {n}건을 삭제했습니다 (감사 로그는 유지)." if days is not None
+              else f"{settings.ops.ip_retention_days}일보다 오래된 IP를 비웠습니다 (실행 기록은 무기한 보관).")
 
 
 if __name__ == "__main__":

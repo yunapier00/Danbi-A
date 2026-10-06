@@ -27,18 +27,21 @@ from collections.abc import AsyncIterator
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from ..agent.loop import FALLBACK_ANSWER, LIMIT_ANSWER, Agent, FinalEvent, TokenEvent, ToolEndEvent, ToolStartEvent
-from ..config import KakaoSettings, LimitSettings
+from ..config import AuthSettings, KakaoSettings, LimitSettings
 from ..llm.base import Message
 from ..ops import TraceRecorder, new_run_id
 from ..ops.sources import extract_sources
 from .admin import mount_admin
+from .auth import Auth, mount_auth
+from .privacy import render_privacy
 from .kakao import mount_kakao
 
 log = logging.getLogger(__name__)
@@ -74,6 +77,7 @@ class Session:
     history: list[Message] = field(default_factory=list)
     updated: float = field(default_factory=time.monotonic)
     busy_since: float | None = None
+    owner: str | None = None  # 이 대화를 시작한 사람 (google:… / IP). 남의 session_id로 이어 쓰지 못하게 한다
 
     @property
     def busy(self) -> bool:
@@ -209,6 +213,13 @@ class Guard:
             return self.DAILY_USER_MSG.format(n=self.limits.per_user_per_day), 0
         return None, self.limits.per_user_per_day - mine - 1
 
+    def remaining(self, *, client_ip: str | None = None, user_key: str | None = None) -> int | None:
+        """오늘 남은 질문 수 (분당 제한을 쓰지 않는 조회용)."""
+        if self.recorder is None:
+            return None
+        used = self.recorder.store.count_user_since(kst_midnight(), client_ip=client_ip, user_key=user_key)
+        return max(0, self.limits.per_user_per_day - used)
+
 
 SECURITY_HEADERS = {
     # SPA는 자기 출처의 스크립트·스타일·글꼴만 쓴다. 답변 HTML은 DOMPurify로 정제하고, 스크립트는 CSP로 한 번 더 막는다.
@@ -245,8 +256,11 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
                limiter: RateLimiter | MultiLimiter | None = None, recorder: TraceRecorder | None = None,
                admin_token: str | None = None, store_client_ip: bool = True, trust_proxy: bool = False,
                proxy_hops: int = 1, limits: LimitSettings | None = None, enable_docs: bool = False,
-               kakao: KakaoSettings | None = None, kakao_http=None) -> FastAPI:
-    """recorder를 주면 모든 대화를 추적 DB에 기록하고 개발자 페이지(/dev)를 연다."""
+               kakao: KakaoSettings | None = None, kakao_http=None, auth: AuthSettings | None = None,
+               auth_http=None, auth_verifier=None, public_url: str | None = None) -> FastAPI:
+    """recorder를 주면 모든 대화를 추적 DB에 기록하고 개발자 페이지(/dev)를 연다.
+    auth를 주면 Google 로그인을 쓰고, auth.allow_anonymous가 꺼져 있으면 웹 채팅에 로그인이 필요하다.
+    auth가 없으면(테스트·로컬) 예전처럼 로그인 없이 IP 기준으로 쓴다."""
     app = FastAPI(title="단비 API", docs_url="/api/docs" if enable_docs else None,
                   openapi_url="/api/openapi.json" if enable_docs else None, redoc_url=None)
     limits = limits or LimitSettings()
@@ -255,9 +269,47 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
     app.state.guard, app.state.sessions = guard, sessions
     slots = guard.slots
     ip_of = lambda request: client_ip(request, trust_proxy, proxy_hops)  # noqa: E731
+    allow_anonymous = auth.allow_anonymous if auth is not None else True
+    authn: Auth | None = None
+    if auth is not None:
+        if recorder is None:
+            raise ValueError("로그인에는 추적 DB(recorder)가 필요합니다")
+        authn = Auth(recorder.store, auth, client_of=ip_of, http=auth_http, verifier=auth_verifier)
+        app.state.auth = authn
+
+    def identity(request: Request) -> tuple[dict | None, str, str | None, str | None]:
+        """(로그인 사용자, 요청 IP, 저장할 IP, 사용자 키). 로그인했으면 하루 제한을 사용자 기준으로 센다."""
+        client = ip_of(request)
+        user = authn.current_user(request) if authn is not None and authn.enabled else None
+        if user is not None:
+            return user, client, (client if store_client_ip else None), f"google:{user['id']}"
+        # 비로그인: 저장된 IP로 센다. IP 저장을 껐으면 IP 해시를 사용자 키로 대신 저장한다
+        if store_client_ip:
+            return None, client, client, None
+        return None, client, None, "ip:" + hashlib.sha256(client.encode()).hexdigest()[:24]
+
+    if authn is not None:
+        def remaining_of(user: dict | None, request: Request) -> int | None:
+            _, _, ip, ukey = identity(request)
+            return guard.remaining(client_ip=ip, user_key=ukey)
+        mount_auth(app, authn, allow_anonymous=allow_anonymous, remaining_of=remaining_of)
     if recorder is not None:
         mount_admin(app, recorder.store, admin_token, client_of=ip_of,
-                    fail_limiter=RateLimiter(limits.admin_auth_failures, 600))
+                    fail_limiter=RateLimiter(limits.admin_auth_failures, 600),
+                    admin_status=authn.admin_status if authn is not None and authn.enabled else None,
+                    admin_emails_set=bool(auth and auth.admin_emails))
+    trusted_hosts = {urlparse(public_url).netloc} if public_url else set()
+
+    @app.middleware("http")
+    async def same_origin_writes(request: Request, call_next):
+        # 로그인 쿠키가 생겼으므로, 쓰기 요청은 같은 사이트에서 온 것만 받는다 (CSRF 방어; 카카오는 서버 간 호출)
+        path = request.url.path
+        if request.method in ("POST", "PUT", "PATCH", "DELETE") and path.startswith("/api/") \
+                and not path.startswith("/api/kakao/"):
+            origin = request.headers.get("origin")
+            if origin and urlparse(origin).netloc not in trusted_hosts | {request.headers.get("host", "")}:
+                return JSONResponse({"detail": "다른 사이트에서 온 요청은 받을 수 없습니다."}, status_code=403)
+        return await call_next(request)
     if kakao is not None:  # KAKAO_SKILL_SECRET이 있을 때만 /api/kakao/skill이 열린다
         mount_kakao(app, agent, recorder, kakao, guard=guard, sessions=sessions, http=kakao_http)
 
@@ -289,6 +341,10 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
     async def dev_page():
         return spa(no_store=True)
 
+    @app.get("/privacy", include_in_schema=False)
+    async def privacy():  # Google OAuth 앱 게시에 필요한 개인정보처리방침 URL
+        return HTMLResponse(render_privacy(), headers={"Cache-Control": "no-cache"})
+
     @app.get("/api/health")
     async def health():
         return {"ok": True}
@@ -308,13 +364,17 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
 
     @app.post("/api/chat")
     async def chat(req: ChatRequest, request: Request):
-        client = ip_of(request)
-        # 1인 하루 제한은 저장된 IP로 센다. IP 저장을 껐으면 IP 해시를 사용자 키로 대신 저장한다.
-        ip, ukey = (client, None) if store_client_ip else (None, "ip:" + hashlib.sha256(client.encode()).hexdigest()[:24])
-        blocked, remaining = guard.check(client, client_ip=ip, user_key=ukey)
+        user, client, ip, ukey = identity(request)
+        if user is None and not allow_anonymous:
+            raise HTTPException(401, "로그인이 필요합니다.")
+        blocked, remaining = guard.check(ukey or client, client_ip=ip, user_key=ukey)
         if blocked:
             raise HTTPException(429, blocked)
+        owner = ukey or client
         sid, session = sessions.get(req.session_id)
+        if session.owner not in (None, owner):  # 남의 대화 ID면 새 대화로
+            sid, session = sessions.get(None)
+        session.owner = owner
         if session.busy:
             raise HTTPException(409, "이전 질문에 아직 답하는 중입니다.")
         session.busy_since = time.monotonic()  # 응답 생성 전에 표시해야 동시 요청을 막을 수 있다
@@ -386,4 +446,4 @@ def build_default_app() -> FastAPI:
     return create_app(agent, recorder=build_recorder(settings, agent), admin_token=settings.ops.admin_token,
                       store_client_ip=settings.ops.store_client_ip, trust_proxy=settings.ops.trust_proxy_headers,
                       proxy_hops=settings.ops.proxy_hops, limits=settings.limits, enable_docs=settings.enable_docs,
-                      kakao=settings.kakao)
+                      kakao=settings.kakao, auth=settings.auth, public_url=settings.auth.public_url)

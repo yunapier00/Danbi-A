@@ -71,9 +71,9 @@ class CrawlerSettings:
 @dataclass
 class OpsSettings:
     db_path: Path = PROJECT_ROOT / "data" / "danbi_ops.sqlite"
-    retention_days: float = 180       # 실행 기록 보관 기간 (감사 로그는 지우지 않음)
-    store_client_ip: bool = True      # 웹 요청 IP를 실행 기록에 저장
-    ip_retention_days: float = 90     # IP만 이보다 먼저 지운다 (purge)
+    retention_days: float | None = None     # 실행 기록 보관 기간. None = 무기한 (감사 로그는 늘 남김)
+    store_client_ip: bool = True            # 웹 요청 IP를 실행 기록에 저장
+    ip_retention_days: float | None = None  # IP만 먼저 지울 기간 (purge). None = 무기한
     trust_proxy_headers: bool = False # 리버스 프록시 뒤일 때만 True (X-Forwarded-For를 믿음)
     proxy_hops: int = 1               # 앞단 프록시 수. X-Forwarded-For의 오른쪽에서 이 번째 값이 실제 클라이언트
     admin_token_env: str = "DANBI_ADMIN_TOKEN"  # 개발자 페이지 토큰을 읽을 환경 변수 이름 (값은 .env에만)
@@ -93,6 +93,40 @@ class LimitSettings:
     daily_tokens: int = 20_000_000    # 웹 채널 전체 하루 토큰(입력+출력)
     max_concurrent: int = 4           # 동시에 답하는 질문 수
     admin_auth_failures: int = 10     # IP당 10분에 허용하는 개발자 토큰 실패 횟수
+
+
+@dataclass
+class AuthSettings:
+    """Google 로그인 (OAuth 2.0 / OpenID Connect). 클라이언트 ID·비밀값과 공개 주소는 환경 변수로 받는다:
+    GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, DANBI_PUBLIC_URL(예: https://….up.railway.app), DANBI_ADMIN_EMAILS(쉼표 구분)."""
+    allow_anonymous: bool = False     # 로그인 없이 채팅 (IP당 하루 제한). 구현은 돼 있고 지금은 끔 (DANBI_ALLOW_ANONYMOUS=1)
+    allowed_domain: str = "dankook.ac.kr"   # 이 Google Workspace 도메인 계정만 (hd·이메일 둘 다 확인)
+    session_days: float = 30          # 로그인 유지 기간 (쓸 때마다 연장)
+    admin_session_hours: float = 12   # 개발자 페이지는 로그인한 지 이 시간 안에만
+
+    @property
+    def client_id(self) -> str | None:
+        import os
+        return os.environ.get("GOOGLE_CLIENT_ID") or None
+
+    @property
+    def client_secret(self) -> str | None:
+        import os
+        return os.environ.get("GOOGLE_CLIENT_SECRET") or None
+
+    @property
+    def public_url(self) -> str | None:
+        import os
+        return (os.environ.get("DANBI_PUBLIC_URL") or "").rstrip("/") or None
+
+    @property
+    def admin_emails(self) -> set[str]:
+        import os
+        return {e.strip().lower() for e in os.environ.get("DANBI_ADMIN_EMAILS", "").split(",") if e.strip()}
+
+    @property
+    def enabled(self) -> bool:
+        return bool(self.client_id and self.client_secret)
 
 
 @dataclass
@@ -129,6 +163,7 @@ class Settings:
     ops: OpsSettings = field(default_factory=OpsSettings)
     limits: LimitSettings = field(default_factory=LimitSettings)
     kakao: KakaoSettings = field(default_factory=KakaoSettings)
+    auth: AuthSettings = field(default_factory=AuthSettings)
     agent: AgentSettings = field(default_factory=AgentSettings)
     enable_docs: bool = False   # /api/docs (DANBI_ENABLE_DOCS=1)
 
@@ -168,6 +203,7 @@ def load_settings(path: str | Path | None = None) -> Settings:
         ops=OpsSettings(**ops_raw),
         limits=LimitSettings(**(raw.get("limits") or {})),
         kakao=KakaoSettings(**(raw.get("kakao") or {})),
+        auth=AuthSettings(**(raw.get("auth") or {})),
         agent=AgentSettings(**(raw.get("agent") or {})),
     )
     _apply_env(settings)
@@ -185,6 +221,7 @@ def _apply_env(s: Settings) -> None:
     DANBI_TRUST_PROXY   1이면 X-Forwarded-For를 믿는다 (Railway처럼 프록시 뒤일 때)
     DANBI_PROXY_HOPS    앞단 프록시 수 (기본 1)
     DANBI_ENABLE_DOCS   1이면 /api/docs를 연다
+    DANBI_ALLOW_ANONYMOUS  1이면 로그인 없이도 채팅 (로컬 개발용)
     """
     import os
 
@@ -197,3 +234,5 @@ def _apply_env(s: Settings) -> None:
     if hops := os.environ.get("DANBI_PROXY_HOPS"):
         s.ops.proxy_hops = max(1, int(hops))
     s.enable_docs = _truthy(os.environ.get("DANBI_ENABLE_DOCS"))
+    if "DANBI_ALLOW_ANONYMOUS" in os.environ:
+        s.auth.allow_anonymous = _truthy(os.environ["DANBI_ALLOW_ANONYMOUS"])

@@ -51,6 +51,29 @@
 }
 .chat-root .new-chat:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-ink); }
 .chat-root .new-chat:disabled { opacity: .5; cursor: default; box-shadow: none; }
+.chat-root .top-actions { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.chat-root .account { display: inline-flex; align-items: center; gap: 8px; min-width: 0; font-size: 13px; color: var(--text-2); }
+.chat-root .account-name { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-root .link-btn { background: none; border: 0; padding: 4px 2px; color: var(--muted); font-size: 13px; cursor: pointer; text-decoration: underline; }
+.chat-root .link-btn:hover { color: var(--accent-ink); }
+
+/* ---------- 로그인 ---------- */
+.chat-root .gate-wrap { flex: 1; display: grid; place-items: center; padding: 24px 16px; }
+.chat-root .gate {
+  width: min(100%, 400px); display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 32px 24px; box-shadow: var(--shadow-lg);
+}
+.chat-root .gate h1 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+.chat-root .gate p { margin: 0; color: var(--text-2); font-size: 14px; line-height: 1.6; }
+.chat-root .gate-error { display: flex; align-items: center; gap: 6px; color: var(--danger) !important; font-size: 13px; }
+.chat-root .gate-error.banner { max-width: 780px; margin: 0 auto 12px; }
+.chat-root .google-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 44px; border-radius: 10px;
+  border: 1px solid var(--line); background: #fff; color: #1f1f1f; font-size: 15px; font-weight: 600; text-decoration: none;
+  box-shadow: var(--shadow); transition: border-color .15s, box-shadow .15s;
+}
+.chat-root .google-btn:hover { border-color: var(--accent); }
+.chat-root .google-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ---------- 대화 ---------- */
 .chat-root main { flex: 1; overflow-y: auto; padding: 20px 16px 8px; scroll-behavior: smooth; }

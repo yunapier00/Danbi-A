@@ -19,7 +19,7 @@ export interface Overview {
 export interface RunRow {
   id: string; conversation_id: string | null; turn: number | null; channel: string; question: string; status: string;
   model: string; started_at: number; latency_ms: number | null; tool_calls: number; tool_errors: number;
-  input_tokens: number; output_tokens: number; client_ip: string | null; user_key?: string | null; feedback: number | null;
+  input_tokens: number; output_tokens: number; client_ip: string | null; user_key?: string | null; user_email?: string | null; feedback: number | null;
 }
 export interface Run extends RunRow {
   answer: string | null; stop_reason: string | null; error: string | null; provider: string;
@@ -36,7 +36,7 @@ export interface ToolCallRow {
   started_at: number; ended_at: number; latency_ms: number; is_error: number; result: string | null; result_chars: number;
 }
 export interface RunDetail {
-  run: Run; llm_calls: LLMCall[]; tool_calls: ToolCallRow[];
+  run: Run; user?: { email: string; name: string | null; blocked: number } | null; llm_calls: LLMCall[]; tool_calls: ToolCallRow[];
   sources: { id: number; kind: string; source_id: string | null; title: string | null; url: string | null; cited: number }[];
   feedback: { id: number; rating: number; comment: string | null; created_at: number }[];
   conversation: { id: string; turn: number; question: string; status: string; started_at: number }[];
@@ -47,10 +47,11 @@ export interface PromptVersion { hash: string; kind: string; content: string }
 
 export class Unauthorized extends Error {}
 
-export function makeApi(token: string) {
+/** token이 있으면 비상용 토큰(Bearer), 없으면 Google 로그인 쿠키로 인증한다. */
+export function makeApi(token: string | null) {
   async function request(path: string): Promise<Response> {
-    const res = await fetch(path, { headers: { Authorization: `Bearer ${token}` } });
-    if (res.status === 401 || res.status === 503) {
+    const res = await fetch(path, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (res.status === 401 || res.status === 403 || res.status === 503) {
       const body = await res.json().catch(() => ({}));
       throw new Unauthorized(body.detail || "다시 로그인하세요.");
     }

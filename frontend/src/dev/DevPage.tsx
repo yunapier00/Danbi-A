@@ -3,6 +3,7 @@ import { makeApi, Unauthorized } from "./api";
 import { Audit } from "./Audit";
 import { Overview } from "./Overview";
 import { RunDetail, RunsList } from "./Runs";
+import { GoogleButton } from "../components/GoogleButton";
 import { Logo } from "../components/Logo";
 import { TooltipProvider } from "./ui";
 import "./dev.css";
@@ -16,8 +17,10 @@ const safe = <T,>(fn: () => T, fallback: T): T => { try { return fn(); } catch {
 export default function DevPage() {
   const [token, setToken] = useState<string | null>(() => safe(() => sessionStorage.getItem(TOKEN_KEY), null));
   const [authed, setAuthed] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [actor, setActor] = useState("");
   const [loginError, setLoginError] = useState("");
-  const api = useMemo(() => makeApi(token || ""), [token]);
+  const api = useMemo(() => makeApi(token), [token]);
 
   const [tab, setTab] = useState<Tab>("overview");
   const [range, setRange] = useState("7d");
@@ -42,16 +45,27 @@ export default function DevPage() {
     safe(() => sessionStorage.removeItem(TOKEN_KEY), undefined);
     setToken(null); setAuthed(false); setLoginError(msg);
   }, []);
+  const signOut = async () => {
+    if (!token) await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
+    logout();
+  };
   const onError = useCallback((e: unknown) => {
     if (e instanceof Unauthorized) logout(e.message);
     else console.error(e);
   }, [logout]);
 
-  // 토큰이 생기면 확인 (로그인은 감사 로그에 남는다)
+  // Google 로그인 쿠키(또는 비상용 토큰)로 관리자인지 확인한다 (로그인은 감사 로그에 남는다)
   useEffect(() => {
-    if (!token) return;
-    api.json("/api/admin/whoami").then(() => setAuthed(true)).catch(onError);
-  }, [api, token, onError]);
+    setChecking(true);
+    api.json<{ actor: string }>("/api/admin/whoami")
+      .then((r) => { setAuthed(true); setActor(r.actor); })
+      .catch((e) => {
+        setAuthed(false);
+        if (token) logout(e instanceof Error ? e.message : "");
+        else if (e instanceof Error && e.message !== "로그인이 필요합니다.") setLoginError(e.message);
+      })
+      .finally(() => setChecking(false));
+  }, [api, token, logout]);
 
   useEffect(() => { const t = setTimeout(() => setQDebounced(q.trim()), 300); return () => clearTimeout(t); }, [q]);
   useEffect(() => { setOffset(0); }, [range, channel, status, tool, qDebounced]);
@@ -98,17 +112,23 @@ export default function DevPage() {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
-  if (!token || !authed) {
+  if (!authed) {
     return (
       <div className="dev-root">
         <section className="login">
           <div className="login-brand"><Logo height={30} /><h1>LLMOps</h1></div>
-          <p>개발자 전용 페이지입니다. 서버의 <code>DANBI_ADMIN_TOKEN</code> 값을 입력하세요. 접근은 감사 로그에 남습니다.</p>
-          <form onSubmit={submitLogin}>
-            <input name="token" type="password" autoComplete="current-password" placeholder="관리자 토큰" required />
-            <button className="ghost" type="submit">들어가기</button>
-          </form>
-          <div className="err">{loginError}</div>
+          {checking ? <p>확인 중…</p> : <>
+            <p>개발자 전용 페이지입니다. 관리자로 등록된 학교 Google 계정으로 로그인하세요. 접근은 감사 로그에 남습니다.</p>
+            <GoogleButton next="/dev" />
+            <div className="err">{loginError}</div>
+            <details className="token-login">
+              <summary>비상용 토큰으로 들어가기</summary>
+              <form onSubmit={submitLogin}>
+                <input name="token" type="password" autoComplete="current-password" placeholder="DANBI_ADMIN_TOKEN" required />
+                <button className="ghost" type="submit">들어가기</button>
+              </form>
+            </details>
+          </>}
         </section>
       </div>
     );
@@ -128,7 +148,8 @@ export default function DevPage() {
             <span className="spacer" />
             <button className="ghost" type="button" onClick={exportRuns} title="선택한 기간의 실행 전체를 JSONL로 내려받습니다 (감사 기록됨)">내보내기</button>
             <button className="ghost" type="button" onClick={toggleTheme} aria-label="테마 전환">테마</button>
-            <button className="ghost" type="button" onClick={() => logout()}>나가기</button>
+            <span className="actor" title="감사 로그에 남는 이름">{actor.replace(/^google:/, "")}</span>
+            <button className="ghost" type="button" onClick={signOut}>{token ? "나가기" : "로그아웃"}</button>
           </div>
         </header>
         <div className="wrap">

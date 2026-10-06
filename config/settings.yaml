@@ -70,9 +70,9 @@ crawler:
 
 ops:                          # LLMOps 추적 (대화·LLM 호출·도구 호출·출처·피드백·감사 로그)
   db_path: ./data/danbi_ops.sqlite
-  retention_days: 180         # 이보다 오래된 실행 기록은 python -m danbi.ops purge 로 삭제 (감사 로그는 남김)
-  store_client_ip: true       # 웹 요청 IP 저장 (개인정보 처리방침에 수집 항목·목적·보관 기간을 적을 것)
-  ip_retention_days: 90       # IP만 먼저 지움 (purge 때 실행 기록에서 비움)
+  retention_days: null        # 실행 기록 보관 기간(일). null = 무기한. 정하면 python -m danbi.ops purge 로 삭제 (감사 로그는 남김)
+  store_client_ip: true       # 웹 요청 IP 저장
+  ip_retention_days: null     # IP만 먼저 지울 기간(일). null = 무기한
   trust_proxy_headers: false  # nginx·Railway 등 리버스 프록시 뒤에서만 true (아니면 X-Forwarded-For 위조 가능)
   proxy_hops: 1               # 앞단 프록시 수 (X-Forwarded-For 오른쪽에서 이 번째 값을 클라이언트로 본다)
   admin_token_env: DANBI_ADMIN_TOKEN   # 개발자 페이지(/dev) 토큰. 값은 .env에만 둔다
@@ -84,6 +84,12 @@ limits:                       # 공개 채팅 남용·비용 방어 (하루 = �
   daily_tokens: 20000000      # 웹 채널 전체 하루 토큰(입력+출력) 상한
   max_concurrent: 4           # 동시에 답하는 질문 수
   admin_auth_failures: 10     # IP당 10분에 허용하는 개발자 토큰 실패 횟수
+
+auth:                         # Google 로그인 — 클라이언트 ID·비밀값 등은 환경 변수 (docs/GOOGLE_LOGIN.md)
+  allow_anonymous: false      # 로그인 없이 채팅 (구현돼 있음, 지금은 끔). 로컬 개발은 DANBI_ALLOW_ANONYMOUS=1
+  allowed_domain: dankook.ac.kr   # 학교 Google 계정만
+  session_days: 30            # 로그인 유지 (쓸 때마다 연장)
+  admin_session_hours: 12     # 개발자 페이지는 로그인한 지 12시간 안에만
 
 kakao:                        # 카카오톡 챗봇 스킬 (KAKAO_SKILL_SECRET 환경 변수가 있을 때만 열림) — docs/KAKAO_SETUP.md
   callback_hosts: [kakao.com, kakaoenterprise.com]   # 이 도메인의 콜백 URL만 호출한다
