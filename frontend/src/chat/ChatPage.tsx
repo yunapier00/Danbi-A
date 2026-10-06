@@ -173,6 +173,9 @@ export default function ChatPage() {
               <PlusIcon /> 새 대화
             </button>
           )}
+          {me && !me.user && me.login_enabled && !needLogin && (  // 비로그인으로도 쓸 수 있을 때도 로그인할 길은 열어 둔다
+            <a className="new-chat login-link" href="/api/auth/login?next=/">로그인</a>
+          )}
           {me?.user && (
             <span className="account">
               <span className="account-name" title={me.user.email}>{me.user.name || me.user.email}</span>
