@@ -6,6 +6,15 @@ const base = (size: number): SVGProps<SVGSVGElement> => ({
   strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true,
 });
 
+export const MenuIcon = ({ size = 18 }: { size?: number }) => (
+  <svg {...base(size)}><path d="M4 6h16" /><path d="M4 12h16" /><path d="M4 18h16" /></svg>
+);
+export const ChatIcon = ({ size = 15 }: { size?: number }) => (
+  <svg {...base(size)}><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z" /></svg>
+);
+export const CloseIcon = ({ size = 18 }: { size?: number }) => (
+  <svg {...base(size)}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+);
 export const SendIcon = ({ size = 18 }: { size?: number }) => (
   <svg {...base(size)}><path d="M12 19V5" /><path d="m5 12 7-7 7 7" /></svg>
 );

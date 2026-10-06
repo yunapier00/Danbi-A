@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import {
-  AlertIcon, CheckIcon, ClockIcon, ExternalIcon, LinkIcon, PlusIcon, SearchIcon, SendIcon, ThumbDownIcon, ThumbUpIcon,
+  AlertIcon, ChatIcon, CheckIcon, ClockIcon, CloseIcon, ExternalIcon, LinkIcon, MenuIcon, PlusIcon, SearchIcon, SendIcon,
+  ThumbDownIcon, ThumbUpIcon,
 } from "../components/icons";
 import { GoogleButton, LOGIN_ERRORS } from "../components/GoogleButton";
 import { Logo, LogoMark } from "../components/Logo";
@@ -15,11 +16,16 @@ interface BotMessage {
   status: string | null;   // 도구 실행 중 문구 (null이면 숨김)
   text: string;
   sources: Source[];
-  meta: { toolCalls: number; elapsed: number; runId: string | null } | null;
+  meta: { toolCalls: number; elapsed: number; runId: string | null; rated?: boolean } | null;
   error: string | null;
 }
 interface UserMessage { id: number; role: "user"; text: string }
 type Message = UserMessage | BotMessage;
+interface Conversation { id: string; title: string; updated_at: number; turns: number }
+interface PastRun {
+  id: string; question: string; answer: string | null; status: string; latency_ms: number | null;
+  tool_calls: number; feedback: number | null; sources: Source[];
+}
 interface Me {
   user: { email: string; name: string | null } | null;
   login_enabled: boolean;
@@ -37,6 +43,32 @@ const storage = {
 
 let nextId = 1;
 
+/** 저장된 실행 → 화면 메시지 */
+function toMessages(runs: PastRun[]): Message[] {
+  const out: Message[] = [];
+  for (const r of runs) {
+    out.push({ id: nextId++, role: "user", text: r.question });
+    const failed = !r.answer;
+    out.push({
+      id: nextId++, role: "bot", status: null, text: r.answer || "", sources: r.sources,
+      meta: failed ? null : { toolCalls: r.tool_calls || 0, elapsed: (r.latency_ms || 0) / 1000, runId: r.id,
+                              rated: r.feedback !== null },
+      error: failed ? (r.status === "running" ? "답변을 만드는 중이었어요." : "답변을 만들지 못했어요.") : null,
+    });
+  }
+  return out;
+}
+
+function whenLabel(ts: number): string {
+  const d = new Date(ts * 1000), now = new Date();
+  const day = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((day(now) - day(d)) / 86400000);
+  if (diff === 0) return d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+  if (diff === 1) return "어제";
+  if (diff < 7) return `${diff}일 전`;
+  return `${d.getMonth() + 1}월 ${d.getDate()}일`;
+}
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -44,6 +76,9 @@ export default function ChatPage() {
   const [remaining, setRemaining] = useState<number | null>(null);  // 오늘 남은 질문 수 (서버가 done에 실어 보냄)
   const [me, setMe] = useState<Me | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [convs, setConvs] = useState<Conversation[] | null>(null);   // 로그인 사용자의 지난 대화
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [drawer, setDrawer] = useState(false);                        // 모바일 사이드바
   const sessionId = useRef<string | null>(storage.get());
   const scroller = useRef<HTMLElement>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
@@ -65,6 +100,35 @@ export default function ChatPage() {
     }).catch(() => setMe({ user: null, login_enabled: false, anonymous_allowed: true, domain: "", remaining: null }));
   }, []);
   useEffect(() => { scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" }); }, [messages]);
+
+  const loadConversations = useCallback(() => {
+    fetch("/api/conversations").then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setConvs(d.items as Conversation[])).catch(() => undefined);
+  }, []);
+
+  const openConversation = useCallback(async (id: string, quiet = false) => {
+    const res = await fetch(`/api/conversations/${encodeURIComponent(id)}`).catch(() => null);
+    if (!res || !res.ok) {
+      if (!quiet) setLoginError("대화를 불러오지 못했어요.");
+      if (sessionId.current === id) { sessionId.current = null; storage.clear(); }
+      return;
+    }
+    const data = await res.json();
+    setMessages(toMessages(data.messages as PastRun[]));
+    sessionId.current = id;
+    storage.set(id);
+    setActiveId(id);
+    setDrawer(false);
+  }, []);
+
+  // 로그인했으면 지난 대화 목록을 불러오고, 새로고침 전에 보던 대화를 다시 연다
+  const loggedIn = Boolean(me?.user);
+  useEffect(() => {
+    if (!loggedIn) { setConvs(null); return; }
+    loadConversations();
+    const last = storage.get();
+    if (last) void openConversation(last, true);
+  }, [loggedIn, loadConversations, openConversation]);
 
   const updateBot = (id: number, patch: (m: BotMessage) => Partial<BotMessage>) =>
     setMessages((all) => all.map((m) => (m.id === id && m.role === "bot" ? { ...m, ...patch(m) } : m)));
@@ -96,6 +160,7 @@ export default function ChatPage() {
         if (event === "session") {
           sessionId.current = String(d.session_id);
           storage.set(sessionId.current);
+          setActiveId(sessionId.current);
         } else if (event === "status") {
           updateBot(botId, () => ({ status: String(d.text) }));
         } else if (event === "token") {
@@ -104,6 +169,7 @@ export default function ChatPage() {
           updateBot(botId, () => ({ sources: d.items as Source[] }));
         } else if (event === "done") {
           if (typeof d.remaining === "number") setRemaining(d.remaining);
+          if (loggedIn) loadConversations();
           updateBot(botId, () => ({
             meta: { toolCalls: Number(d.tool_calls), elapsed: Number(d.elapsed), runId: (d.run_id as string) || null },
           }));
@@ -118,7 +184,7 @@ export default function ChatPage() {
       setBusy(false);
       textarea.current?.focus();
     }
-  }, [busy]);
+  }, [busy, loggedIn, loadConversations]);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -148,21 +214,28 @@ export default function ChatPage() {
     sessionId.current = null;
     storage.clear();
     setMessages([]);
+    setActiveId(null);
+    setDrawer(false);
     textarea.current?.focus();
   };
 
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
     reset();
+    setConvs(null);
     setRemaining(null);
     setMe((m) => (m ? { ...m, user: null } : m));
   };
   const needLogin = me !== null && !me.user && !me.anonymous_allowed;
 
   return (
-    <div className="chat-root">
+    <div className={convs ? "chat-root has-sidebar" : "chat-root"}>
       <header className="topbar">
         <div className="brand">
+          {convs && (
+            <button className="icon-btn menu-btn" type="button" aria-label="지난 대화" aria-expanded={drawer}
+                    onClick={() => setDrawer((v) => !v)}><MenuIcon /></button>
+          )}
           <Logo height={26} />
           <span className="brand-sep" aria-hidden="true" />
           <small className="brand-sub">단국대학교 비서 AI</small>
@@ -196,7 +269,36 @@ export default function ChatPage() {
             {loginError && <p className="gate-error" role="alert"><AlertIcon /> {loginError}</p>}
           </section>
         </main>
-      ) : <>
+      ) : <div className="body">
+      {convs && (
+        <>
+          <div className={drawer ? "scrim show" : "scrim"} onClick={() => setDrawer(false)} aria-hidden="true" />
+          <aside className={drawer ? "sidebar open" : "sidebar"} aria-label="지난 대화">
+            <div className="sidebar-head">
+              <button className="new-chat wide" type="button" onClick={reset}><PlusIcon /> 새 대화</button>
+              <button className="icon-btn close-btn" type="button" aria-label="닫기" onClick={() => setDrawer(false)}>
+                <CloseIcon />
+              </button>
+            </div>
+            <div className="sidebar-title">지난 대화</div>
+            {convs.length === 0 ? <p className="sidebar-empty">아직 대화가 없어요.</p> : (
+              <ul className="conv-list">
+                {convs.map((c) => (
+                  <li key={c.id}>
+                    <button type="button" className={c.id === activeId ? "conv active" : "conv"} disabled={busy}
+                            aria-current={c.id === activeId ? "true" : undefined} onClick={() => void openConversation(c.id)}>
+                      <ChatIcon />
+                      <span className="conv-title">{c.title}</span>
+                      <span className="conv-when">{whenLabel(c.updated_at)}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </aside>
+        </>
+      )}
+      <div className="chat-col">
       <main ref={scroller}>
         {loginError && <p className="gate-error banner" role="alert"><AlertIcon /> {loginError}</p>}
         <div className="log" aria-live="polite">
@@ -228,7 +330,8 @@ export default function ChatPage() {
           <span>질문 기록은 서비스 개선을 위해 저장돼요.</span>
         </div>
       </footer>
-      </>}
+      </div>
+      </div>}
     </div>
   );
 }
@@ -270,7 +373,7 @@ function BotBubble({ m }: { m: BotMessage }) {
           <div className="meta">
             <span className="meta-item"><ClockIcon /> {m.meta.elapsed.toFixed(1)}초</span>
             {m.meta.toolCalls > 0 && <span className="meta-item"><SearchIcon /> 자료 {m.meta.toolCalls}회 확인</span>}
-            {m.meta.runId && <Feedback runId={m.meta.runId} />}
+            {m.meta.runId && <Feedback runId={m.meta.runId} rated={m.meta.rated} />}
           </div>
         )}
       </div>
@@ -278,8 +381,8 @@ function BotBubble({ m }: { m: BotMessage }) {
   );
 }
 
-function Feedback({ runId }: { runId: string }) {
-  const [state, setState] = useState<"idle" | "sending" | "ok" | "fail">("idle");
+function Feedback({ runId, rated = false }: { runId: string; rated?: boolean }) {
+  const [state, setState] = useState<"idle" | "sending" | "ok" | "fail">(rated ? "ok" : "idle");
   const [picked, setPicked] = useState<1 | -1 | null>(null);
   const send = async (rating: 1 | -1) => {
     setPicked(rating);

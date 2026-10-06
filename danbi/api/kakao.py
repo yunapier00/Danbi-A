@@ -44,7 +44,7 @@ def allowed_callback(url: str, hosts: list[str]) -> bool:
 
 
 def mount_kakao(app: FastAPI, agent: Agent, recorder: TraceRecorder | None, settings: KakaoSettings, *,
-                guard, sessions, http: httpx.AsyncClient | None = None) -> None:
+                guard, sessions, http: httpx.AsyncClient | None = None, memory: bool = True) -> None:
     secret = settings.secret
     if not secret:
         return  # 설정 전에는 엔드포인트가 없다 (404)
@@ -62,7 +62,7 @@ def mount_kakao(app: FastAPI, agent: Agent, recorder: TraceRecorder | None, sett
 
     async def run_agent(question: str, ukey: str, session) -> tuple[str, list[dict]]:
         """에이전트 실행 → (답변 마크다운, 출처 링크). 세션 기록을 저장하고 '답변 중' 표시를 푼다."""
-        events = agent.run(question, history=session.history)
+        events = agent.run(question, history=session.history if memory else [])
         if recorder is not None:
             events = recorder.record(events, run_id=new_run_id(), question=question, channel="kakao",
                                      conversation_id=ukey, user_key=ukey)

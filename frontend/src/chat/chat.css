@@ -58,6 +58,48 @@
 .chat-root .link-btn { background: none; border: 0; padding: 4px 2px; color: var(--muted); font-size: 13px; cursor: pointer; text-decoration: underline; }
 .chat-root .link-btn:hover { color: var(--accent-ink); }
 
+/* ---------- 지난 대화 (로그인 사용자) ---------- */
+.chat-root .body { flex: 1; display: flex; min-height: 0; position: relative; }
+.chat-root .chat-col { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.chat-root.has-sidebar .topbar { padding-left: 16px; padding-right: 16px; }
+.chat-root .sidebar {
+  width: 264px; flex: none; display: flex; flex-direction: column; gap: 6px; padding: 12px 10px;
+  border-right: 1px solid var(--line); background: var(--panel-2); overflow-y: auto;
+}
+.chat-root .sidebar-head { display: flex; gap: 6px; }
+.chat-root .new-chat.wide { flex: 1; justify-content: center; }
+.chat-root .sidebar-title { margin: 10px 6px 2px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.chat-root .sidebar-empty { margin: 6px; font-size: 13px; color: var(--muted); }
+.chat-root .conv-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.chat-root .conv {
+  width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; text-align: left;
+  padding: 8px 10px; border-radius: 10px; border: 1px solid transparent; background: none; color: var(--text-2); font-size: 14px;
+}
+.chat-root .conv:hover:not(:disabled) { background: var(--panel); border-color: var(--line); }
+.chat-root .conv.active { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+.chat-root .conv:disabled { opacity: .6; cursor: default; }
+.chat-root .conv svg { color: var(--muted); }
+.chat-root .conv-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-root .conv-when { font-size: 12px; color: var(--muted); font-weight: 400; white-space: nowrap; }
+.chat-root .icon-btn {
+  display: inline-grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--text-2);
+}
+.chat-root .menu-btn, .chat-root .close-btn, .chat-root .scrim { display: none; }
+@media (min-width: 861px) {   /* 넓은 화면에서는 사이드바에 '새 대화'가 있으니 상단 버튼은 숨긴다 */
+  .chat-root.has-sidebar .top-actions > .new-chat { display: none; }
+}
+@media (max-width: 860px) {
+  .chat-root .menu-btn, .chat-root .close-btn { display: inline-grid; }
+  .chat-root .sidebar {
+    position: absolute; z-index: 5; inset: 0 auto 0 0; width: min(84vw, 300px); box-shadow: var(--shadow-lg);
+    transform: translateX(-105%); transition: transform .2s ease; visibility: hidden;
+  }
+  .chat-root .sidebar.open { transform: none; visibility: visible; }
+  .chat-root .scrim.show { display: block; position: absolute; inset: 0; z-index: 4; background: rgba(15, 23, 42, 0.35); }
+}
+@media (prefers-reduced-motion: reduce) { .chat-root .sidebar { transition: none; } }
+
 /* ---------- 로그인 ---------- */
 .chat-root .gate-wrap { flex: 1; display: grid; place-items: center; padding: 24px 16px; }
 .chat-root .gate {

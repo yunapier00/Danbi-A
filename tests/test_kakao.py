@@ -29,7 +29,7 @@ def skill_body(text: str, uid: str = "u1", callback: str | None = None) -> dict:
     return {"userRequest": ur, "bot": {"id": "b"}, "action": {"params": {}}}
 
 
-def make_app(replies, monkeypatch, *, secret=SECRET, limits=None, http=None, store=None):
+def make_app(replies, monkeypatch, *, secret=SECRET, limits=None, http=None, store=None, memory=True):
     if secret:
         monkeypatch.setenv("KAKAO_SKILL_SECRET", secret)
     else:
@@ -39,7 +39,8 @@ def make_app(replies, monkeypatch, *, secret=SECRET, limits=None, http=None, sto
     agent = Agent(FakeProvider(replies), tools)
     store = store or TraceStore(None)
     app = create_app(agent, recorder=TraceRecorder(store, agent), limits=limits or LimitSettings(),
-                     kakao=KakaoSettings(), kakao_http=http)
+                     kakao=KakaoSettings(), kakao_http=http, memory=memory)
+    app.state.provider = agent.provider
     return app, store
 
 
@@ -177,3 +178,11 @@ def test_service_daily_cap_counts_web_and_kakao(monkeypatch):
     assert events(client.post("/api/chat", json={"message": "q"}))[-1][0] == "done"
     res = client.post("/api/kakao/skill", json=skill_body("q"), headers=HEAD).json()
     assert "모두 썼어요" in texts(res)[0] and store.list_runs()["total"] == 1
+
+
+def test_kakao_memory_off_answers_each_question_alone(monkeypatch):
+    app, _ = make_app([Reply(text="첫 답"), Reply(text="둘째 답")], monkeypatch, memory=False)
+    client = TestClient(app)
+    client.post("/api/kakao/skill", json=skill_body("첫 질문"), headers=HEAD)
+    client.post("/api/kakao/skill", json=skill_body("둘째 질문"), headers=HEAD)
+    assert [m.role for m in app.state.provider.requests[-1]] == ["user"]

@@ -506,6 +506,35 @@ class TraceStore:
                 self._db.execute("DELETE FROM auth_sessions WHERE user_id = ?", (user_id,))
             self._db.commit()
 
+    # --- 사용자 대화 기록 (웹 채팅 사이드바) ------------------------------------------------
+
+    def user_conversations(self, user_key: str, *, channel: str = "web", limit: int = 50) -> list[dict]:
+        """사용자의 대화 목록 (최근에 이어 쓴 순). 제목은 첫 질문."""
+        return self._all(
+            "SELECT r.conversation_id AS id, MIN(r.started_at) AS created_at, MAX(r.started_at) AS updated_at, "
+            "COUNT(*) AS turns, (SELECT q.question FROM runs q WHERE q.conversation_id = r.conversation_id "
+            "ORDER BY q.turn, q.started_at LIMIT 1) AS title "
+            "FROM runs r WHERE r.user_key = ? AND r.channel = ? AND r.conversation_id IS NOT NULL "
+            "GROUP BY r.conversation_id ORDER BY updated_at DESC LIMIT ?", (user_key, channel, limit))
+
+    def conversation_messages(self, conversation_id: str, user_key: str) -> list[dict] | None:
+        """한 대화의 질문·답변·출처. 대화의 모든 실행이 이 사용자 것이 아니면 None (남의 대화는 못 본다)."""
+        runs = self._all(
+            "SELECT id, turn, question, answer, status, started_at, latency_ms, tool_calls, user_key, "
+            "(SELECT SUM(rating) FROM feedback f WHERE f.run_id = runs.id) AS feedback "
+            "FROM runs WHERE conversation_id = ? ORDER BY turn, started_at", (conversation_id,))
+        if not runs or any(r["user_key"] != user_key for r in runs):
+            return None
+        marks = ", ".join("?" * len(runs))
+        links: dict[str, dict[str, dict]] = {}
+        for s in self._all(f"SELECT run_id, title, url FROM sources WHERE run_id IN ({marks}) AND url IS NOT NULL "
+                           f"AND url != '' ORDER BY id", tuple(r["id"] for r in runs)):
+            links.setdefault(s["run_id"], {}).setdefault(s["url"], {"title": s["title"] or "", "url": s["url"]})
+        for r in runs:
+            r["sources"] = list(links.get(r["id"], {}).values())
+            del r["user_key"]
+        return runs
+
     def prompt_version(self, h: str) -> dict | None:
         return self._one("SELECT * FROM prompt_versions WHERE hash = ?", (h,))
 

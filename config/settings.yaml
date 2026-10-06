@@ -99,3 +99,4 @@ agent:
   max_tool_calls: 10          # 병렬 호출도 1건씩 센다
   timeout_seconds: 60
   inline_source_limit: 20     # 검토된 웹 소스가 이 수 이하면 도구 설명에 목록을 직접 넣음
+  memory: false               # 이전 질문·답변을 LLM에 함께 보냄 (비용↑, 지금은 끔). 꺼도 대화 기록·사이드바는 그대로

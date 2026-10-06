@@ -178,6 +178,15 @@ class MultiLimiter:
 KST = timezone(timedelta(hours=9))
 
 
+def history_from_runs(runs: list[dict]) -> list[Message]:
+    """저장된 질문·답변 → 에이전트 대화 기록 (도구 결과는 빠지지만 맥락을 이어 가기에는 충분하다)."""
+    history: list[Message] = []
+    for r in runs:
+        if r.get("answer"):
+            history += [Message(role="user", text=r["question"]), Message(role="assistant", text=r["answer"])]
+    return history
+
+
 def kst_midnight(now: float | None = None) -> float:
     d = datetime.fromtimestamp(now or time.time(), KST)
     return d.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
@@ -257,10 +266,11 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
                admin_token: str | None = None, store_client_ip: bool = True, trust_proxy: bool = False,
                proxy_hops: int = 1, limits: LimitSettings | None = None, enable_docs: bool = False,
                kakao: KakaoSettings | None = None, kakao_http=None, auth: AuthSettings | None = None,
-               auth_http=None, auth_verifier=None, public_url: str | None = None) -> FastAPI:
+               auth_http=None, auth_verifier=None, public_url: str | None = None, memory: bool = True) -> FastAPI:
     """recorder를 주면 모든 대화를 추적 DB에 기록하고 개발자 페이지(/dev)를 연다.
     auth를 주면 Google 로그인을 쓰고, auth.allow_anonymous가 꺼져 있으면 웹 채팅에 로그인이 필요하다.
-    auth가 없으면(테스트·로컬) 예전처럼 로그인 없이 IP 기준으로 쓴다."""
+    auth가 없으면(테스트·로컬) 예전처럼 로그인 없이 IP 기준으로 쓴다.
+    memory=False면 같은 대화의 이전 질문·답변을 LLM에 보내지 않는다 (질문마다 따로 답한다, 기록은 그대로 저장)."""
     app = FastAPI(title="단비 API", docs_url="/api/docs" if enable_docs else None,
                   openapi_url="/api/openapi.json" if enable_docs else None, redoc_url=None)
     limits = limits or LimitSettings()
@@ -311,7 +321,7 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
                 return JSONResponse({"detail": "다른 사이트에서 온 요청은 받을 수 없습니다."}, status_code=403)
         return await call_next(request)
     if kakao is not None:  # KAKAO_SKILL_SECRET이 있을 때만 /api/kakao/skill이 열린다
-        mount_kakao(app, agent, recorder, kakao, guard=guard, sessions=sessions, http=kakao_http)
+        mount_kakao(app, agent, recorder, kakao, guard=guard, sessions=sessions, http=kakao_http, memory=memory)
 
     @app.middleware("http")
     async def security_headers(request: Request, call_next):
@@ -362,6 +372,26 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
             raise HTTPException(404, "답변을 찾을 수 없습니다.")
         return {"ok": True}
 
+    def logged_in(request: Request) -> tuple[dict, str]:
+        user, _, _, ukey = identity(request)
+        if user is None or recorder is None:
+            raise HTTPException(401, "로그인이 필요합니다.")
+        return user, ukey
+
+    @app.get("/api/conversations")
+    def conversations(request: Request):
+        """로그인 사용자의 지난 대화 목록 (웹 채팅 사이드바)."""
+        _, ukey = logged_in(request)
+        return {"items": recorder.store.user_conversations(ukey)}
+
+    @app.get("/api/conversations/{conversation_id}")
+    def conversation(conversation_id: str, request: Request):
+        _, ukey = logged_in(request)
+        messages = recorder.store.conversation_messages(conversation_id[:64], ukey)
+        if messages is None:
+            raise HTTPException(404, "대화를 찾을 수 없습니다.")
+        return {"id": conversation_id, "messages": messages}
+
     @app.post("/api/chat")
     async def chat(req: ChatRequest, request: Request):
         user, client, ip, ukey = identity(request)
@@ -372,6 +402,15 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
             raise HTTPException(429, blocked)
         owner = ukey or client
         sid, session = sessions.get(req.session_id)
+        if req.session_id and sid != req.session_id and user is not None and recorder is not None:
+            # 메모리에서 사라진(1시간 지남·서버 재시작) 내 지난 대화: 같은 대화 ID로 이어 간다.
+            # 대화 맥락(memory)이 켜져 있으면 저장된 질문·답변으로 LLM 기록도 되살린다
+            past = recorder.store.conversation_messages(req.session_id, ukey)
+            if past is not None:
+                sessions.reset(sid)
+                sid, session = req.session_id, sessions.get_or_create(req.session_id)
+                if memory:
+                    sessions.save(session, history_from_runs(past))
         if session.owner not in (None, owner):  # 남의 대화 ID면 새 대화로
             sid, session = sessions.get(None)
         session.owner = owner
@@ -398,7 +437,7 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
         run_id = new_run_id()
         links: dict[str, dict] = {}
         final: FinalEvent | None = None
-        events = agent.run(message, history=session.history)
+        events = agent.run(message, history=session.history if memory else [])
         if recorder is not None:
             events = recorder.record(events, run_id=run_id, question=message, channel="web", conversation_id=sid,
                                      client_ip=ip, user_key=ukey)
@@ -446,4 +485,5 @@ def build_default_app() -> FastAPI:
     return create_app(agent, recorder=build_recorder(settings, agent), admin_token=settings.ops.admin_token,
                       store_client_ip=settings.ops.store_client_ip, trust_proxy=settings.ops.trust_proxy_headers,
                       proxy_hops=settings.ops.proxy_hops, limits=settings.limits, enable_docs=settings.enable_docs,
-                      kakao=settings.kakao, auth=settings.auth, public_url=settings.auth.public_url)
+                      kakao=settings.kakao, auth=settings.auth, public_url=settings.auth.public_url,
+                      memory=settings.agent.memory)
