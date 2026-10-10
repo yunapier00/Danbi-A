@@ -5,17 +5,13 @@
 
 from __future__ import annotations
 
-import asyncio
-import re
-
 from ...llm.base import ToolSpec
-from ...rag.chroma_store import ChromaStore, Chunk, UnknownSourceError
+from ...rag.chroma_store import ChromaStore, UnknownSourceError
 from ...rag.embedder import GeminiEmbedder
+from ...rag.retriever import RetrievalOptions, Retriever, format_chunks
 from .registry import Tool, ToolError
 
 MAX_TOP_K = 20
-KEYWORD_LIMIT = 3
-_ARTICLE = re.compile(r"제\s*\d+\s*조(?:\s*의\s*\d+)?")  # "제29조", "제 3 조의 2"
 
 
 def build_description(store: ChromaStore) -> str:
@@ -32,23 +28,11 @@ def build_description(store: ChromaStore) -> str:
     return "\n".join(lines)
 
 
-def _format(store: ChromaStore, query: str, chunks: list[Chunk]) -> str:
-    if not chunks:
-        return f"[source: {store.collection_name}] 문서 검색 결과 없음 — 질의: {query}"
-    out = [f"[source: {store.collection_name}] 문서 검색 결과 {len(chunks)}건 — 질의: {query}"]
-    for n, c in enumerate(chunks, 1):
-        info = store.info.get(c.source)
-        doc = info.label if info else c.source
-        if info and info.as_of:
-            doc += f" [{info.as_of}]"
-        loc = " > ".join([doc, *c.headings])
-        extra = [f"p.{c.page}"] if c.page is not None else []
-        extra.append("키워드 일치" if c.distance is None else f"거리 {c.distance:.3f}")
-        out.append(f"\n({n}) {loc} | {' | '.join(extra)}\n{c.text.strip()}")
-    return "\n".join(out)
-
-
-def make_search_knowledge(store: ChromaStore, embedder: GeminiEmbedder, default_top_k: int = 8) -> Tool:
+def make_search_knowledge(store: ChromaStore, embedder: GeminiEmbedder, default_top_k: int = 6,
+                          options: RetrievalOptions | None = None) -> Tool:
+    """검색 방식(하이브리드·줄임말 확장·잡음 정리·조각 합치기)은 rag/retriever.py. 평가: evals/retrieval_run.py"""
+    retriever = Retriever(store, embedder)
+    opts = options or RetrievalOptions()
     spec = ToolSpec(
         name="search_knowledge",
         description=build_description(store),
@@ -76,20 +60,8 @@ def make_search_knowledge(store: ChromaStore, embedder: GeminiEmbedder, default_
             raise ToolError(str(e)) from e
         k = max(1, min(int(top_k or default_top_k), MAX_TOP_K))
 
-        embedding = await embedder.embed_query(query)
-        terms = list(dict.fromkeys(re.sub(r"\s+", "", m) for m in _ARTICLE.findall(query)))
-        semantic, *keyword = await asyncio.gather(
-            asyncio.to_thread(store.query, embedding, k, files),
-            *(asyncio.to_thread(store.keyword_search, t, KEYWORD_LIMIT, files) for t in terms),
-        )
-        # 조항 번호 정확 일치를 앞에 두고, 의미 검색 결과와 중복을 제거한다
-        seen: set[str] = set()
-        chunks = []
-        for c in [*(c for group in keyword for c in group), *semantic]:
-            if c.id not in seen:
-                seen.add(c.id)
-                chunks.append(c)
-        return _format(store, query, chunks)
+        chunks = await retriever.search(query, k, files, opts)
+        return format_chunks(store, query, chunks)
 
     def status(args: dict) -> str:
         scope = "·".join(args.get("sources") or []) or "학교 규정·학사"

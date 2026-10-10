@@ -42,7 +42,7 @@ class RagSourceInfo:
 class RagSettings:
     chroma_path: Path = PROJECT_ROOT / "chroma_db_dd3"
     collection: str = "campus_rules"
-    top_k: int = 8
+    top_k: int = 6
     sources: dict[str, RagSourceInfo] = field(default_factory=dict)  # 파일명 → 정보
 
 

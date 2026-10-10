@@ -21,7 +21,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "pdfplumber>=0.11"]   # pdfplumber(MIT): scripts/build_rag.py의 PDF 표 추출 (서버에는 불필요)
 
 [build-system]
 requires = ["setuptools>=68"]

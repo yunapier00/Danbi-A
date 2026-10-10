@@ -57,12 +57,12 @@ async def test_semantic_search_with_source_filter(store):
 
 
 async def test_article_keyword_match_comes_first(store):
-    tool = make_search_knowledge(store, FakeEmbedder([0.0, 0.0, 1.0]), default_top_k=1)
+    # 질문 벡터는 시간표 PDF에 가장 가깝지만, 조항 번호가 제목에 정확히 맞는 청크가 1위로 온다
+    tool = make_search_knowledge(store, FakeEmbedder([0.0, 0.0, 1.0]), default_top_k=2)
     out = await tool.func(query="제 29 조 내용")
     first = out.split("(1)")[1].split("(2)")[0]
     assert "학칙 시행세칙 [2026.06.15 개정본] > 제3장 > 제29조(이수제한)" in first
-    assert "키워드 일치" in first
-    assert "p.2" in out  # 의미 검색 결과(시간표 PDF)도 뒤에 붙는다
+    assert "p.2" in out.split("(2)")[1]  # 의미 검색 결과(시간표 PDF)는 그다음
 
 
 async def test_unknown_source_is_tool_error(store):

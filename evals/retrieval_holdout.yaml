@@ -1,0 +1,33 @@
+# 검색 평가 검증용 세트 — 설정 조정(retrieval.yaml)에 쓰지 않은 질문. 최종 설정 확인에만 쓴다 (과적합 점검).
+# 2026-10-10 작성. 형식은 retrieval.yaml과 같다.
+
+- id: ho-suspend-tuition
+  q: 휴학하면 등록금은 어떻게 처리돼?
+  gold: [{src: 학칙, head: 휴학자의 등록금}, {src: 학칙 시행세칙, head: 등록금 납부자의 휴학}]
+- id: ho-graduation-delay
+  q: 졸업 유예 신청할 수 있어?
+  gold: [{src: 학칙 시행세칙, head: 학사학위취득의 유예}]
+- id: ho-repeat-semester
+  q: 한 학기 통째로 다시 들을 수 있어?
+  gold: [{src: 학칙 시행세칙, head: 학기재수강}]
+- id: ho-exam-kinds
+  q: 시험 종류에는 뭐가 있어?
+  gold: [{src: 학칙 시행세칙, head: 시험의 종류}, {src: 학칙, head: 제32조(시험)}]
+- id: ho-credit-exchange
+  q: 다른 대학에서 들은 수업 학점 인정돼?
+  gold: [{src: 학칙, head: 학점교류}]
+- id: ho-internship-credit
+  q: 인턴십도 학점으로 인정받을 수 있어?
+  gold: [{src: 학칙, head: 현장실습 및 인턴십}]
+- id: ho-library-floors
+  q: 도서관 몇 층에서 책 빌려?
+  gold: [{src: 도서관, head: 자료실 층별 안내}]
+- id: ho-shuttle-afternoon
+  q: 오후에 셔틀 몇 분 간격이야?
+  gold: [{src: 셔틀버스, head: 학기 중 오후 운행}]
+- id: ho-midterm
+  q: 중간고사 언제부터야?
+  gold: [{src: 학사일정, head: 중간고사}]
+- id: ho-library-building
+  q: 중도 위치 알려줘
+  gold: [{src: 캠퍼스맵, head: 퇴계기념중앙도서관}, {src: 캠퍼스맵, head: 중앙도서관}]

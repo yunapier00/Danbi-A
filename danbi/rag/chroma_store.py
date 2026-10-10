@@ -29,6 +29,7 @@ class Chunk:
     page: int | None = None
     headings: list[str] = field(default_factory=list)
     distance: float | None = None  # 키워드 검색 결과는 None
+    parts: list[str] = field(default_factory=list)  # 여러 조각을 합친 청크면 원래 청크 id들 (retriever.merge)
 
 
 class UnknownSourceError(ValueError):

@@ -13,12 +13,26 @@ embedding:                    # LLM과 별개. DB를 만든 설정과 반드시 
   dimensions: 3072
 
 rag:
-  chroma_path: ./chroma_db_dd3
-  collection: campus_rules
-  top_k: 8
+  # 2026-10-10부터 RAG_data/ 원본에서 새로 만든 DB를 쓴다 (scripts/build_rag.py, docs/RETRIEVAL.md).
+  # 기존 DB(./chroma_db_dd3, 컬렉션 campus_rules)는 비교·되돌리기용으로 남겨 둔다.
+  chroma_path: ./chroma_db_v2
+  collection: danbi_docs
+  top_k: 6                    # 2026-10-10 검색 평가: 8 → 6으로 결과 글자 수 약 20% 감소, 정답률 유지 (docs/RETRIEVAL.md)
   # 출처(파일명) → 짧은 이름·내용·기준 시점. search_knowledge 도구 설명과 출처 필터에 쓴다.
   # 여기에 없는 새 출처는 파일명 그대로 노출되고 시작 시 경고가 남는다.
   sources:
+    # chroma_db_v2 (scripts/build_rag.py가 RAG_data/ 원본 PDF에서 새로 만든 DB)의 출처
+    "(2-1-1)학칙(20260831)_일부개정.pdf":
+      short: 학칙
+      label: 학칙
+      content: 단국대학교 학칙 조항 (학사 운영, 입학, 수업, 학점, 휴·복학, 졸업, 등록금 등)
+      as_of: 2026.08.31 개정본
+    "(2-1-2)학칙 시행세칙(20260615)_일부개정.pdf":
+      short: 학칙 시행세칙
+      label: 학칙 시행세칙
+      content: 학칙 시행세칙 조항 (수강신청, 재수강, 성적, 휴·복학, 다전공, 조기졸업, 졸업인증 등 세부 기준)
+      as_of: 2026.06.15 개정본
+    # 기존 DB(chroma_db_dd3)의 출처 — 비교 평가용으로 남겨 둔다 (DB에 없는 출처는 시작 시 경고만 남기고 제외)
     "(2-1-1)학칙(20260507)_일부개정.md":
       short: 학칙
       label: 학칙

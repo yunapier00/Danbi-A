@@ -3,6 +3,9 @@
 reference/chroma_db_dd3/
 chroma_db_dd3/*-wal
 chroma_db_dd3/*-shm
+# 새 RAG DB(scripts/build_rag.py가 생성)도 배포 이미지에 넣으려고 커밋한다
+chroma_db_v2/*-wal
+chroma_db_v2/*-shm
 cache/
 .venv/
 __pycache__/
@@ -24,3 +27,11 @@ Danbi_image.png
 
 # 강의시간표 원본 저장 화면 (사람이 브라우저에서 저장; scripts.build_timetable 입력, 저장소에 올리지 않음)
 /*.do
+
+# 개인 메모 문서 (로컬 전용)
+docs/BACKLOG.md
+docs/FEATURE_IDEAS.md
+docs/TECH_IDEAS.md
+
+# RAG 원본 중 쓰지 않는 자료 (나무위키 사본·입시 모집요강 등 — docs/RETRIEVAL.md 참고)
+RAG_data/other/
