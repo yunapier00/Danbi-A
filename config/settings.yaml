@@ -13,7 +13,7 @@ embedding:                    # LLM과 별개. DB를 만든 설정과 반드시 
   dimensions: 3072
 
 rag:
-  # 2026-10-10부터 RAG_data/ 원본에서 새로 만든 DB를 쓴다 (scripts/build_rag.py, docs/RETRIEVAL.md).
+  # 2026-10-10부터 rag_sources/ 원본에서 새로 만든 DB를 쓴다 (scripts/build_rag.py, docs/RETRIEVAL.md).
   # 기존 DB(./chroma_db_dd3, 컬렉션 campus_rules)는 비교·되돌리기용으로 남겨 둔다.
   chroma_path: ./chroma_db_v2
   collection: danbi_docs
@@ -21,7 +21,7 @@ rag:
   # 출처(파일명) → 짧은 이름·내용·기준 시점. search_knowledge 도구 설명과 출처 필터에 쓴다.
   # 여기에 없는 새 출처는 파일명 그대로 노출되고 시작 시 경고가 남는다.
   sources:
-    # chroma_db_v2 (scripts/build_rag.py가 RAG_data/ 원본 PDF에서 새로 만든 DB)의 출처
+    # chroma_db_v2 (scripts/build_rag.py가 rag_sources/ 원본 PDF에서 새로 만든 DB)의 출처
     "(2-1-1)학칙(20260831)_일부개정.pdf":
       short: 학칙
       label: 학칙

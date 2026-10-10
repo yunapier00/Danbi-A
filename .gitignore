@@ -34,4 +34,4 @@ docs/FEATURE_IDEAS.md
 docs/TECH_IDEAS.md
 
 # RAG 원본 중 쓰지 않는 자료 (나무위키 사본·입시 모집요강 등 — docs/RETRIEVAL.md 참고)
-RAG_data/other/
+rag_sources/other/

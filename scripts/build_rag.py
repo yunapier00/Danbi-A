@@ -1,4 +1,4 @@
-"""RAG_data/ 원본 문서 → 새 Chroma DB (chroma_db_v2, 컬렉션 danbi_docs).
+"""rag_sources/ 원본 문서 → 새 Chroma DB (chroma_db_v2, 컬렉션 danbi_docs).
 
 기존 DB(chroma_db_dd3)는 건드리지 않는다. 새 폴더에 새로 만들고, config/settings.yaml의 rag.chroma_path·collection을 바꿔 쓴다.
 
@@ -31,7 +31,7 @@ from danbi.config import PROJECT_ROOT, load_settings
 
 log = logging.getLogger("build_rag")
 
-SRC_DIR = PROJECT_ROOT / "RAG_data"
+SRC_DIR = PROJECT_ROOT / "rag_sources"
 OUT_DB = PROJECT_ROOT / "chroma_db_v2"
 COLLECTION = "danbi_docs"
 WORK = PROJECT_ROOT / "data" / "rag_build"
