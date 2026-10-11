@@ -263,7 +263,8 @@ def make_with_departments(inline_limit=20):
         "p": Department("p", "검토전학과", "공과대학", "죽전", "dku_cms", "https://cms.dankook.ac.kr/web/p", ["검토전학과"],
                         {"tel": "031-8005-2222"}),
         "chemistry": Department("chemistry", "화학과", "과학기술대학", "천안", "dku_cms",
-                                "https://cms.dankook.ac.kr/web/chemistry", ["화학과"], {"tel": "041-550-3430", "room": "225호"}),
+                                "https://cms.dankook.ac.kr/web/chemistry", ["화학과"], {"tel": "041-550-3430", "room": "225호"},
+                                source_page="https://www.dankook.ac.kr/web/kor/-sci"),
         "film": Department("film", "연극전공·영화전공", "음악·예술대학 공연영화학부", "죽전", "dku_cms", None, ["연극전공", "영화전공"]),
     }
     reg = SourceRegistry([src, pending])
@@ -280,6 +281,7 @@ def test_list_sources_supported_and_unsupported():
     assert "[검색 미지원] chemistry: 화학과 (과학기술대학, 천안)" in out
     assert "학과 사무실: 전화 041-550-3430, 사무실 225호" in out and "연락처·홈페이지를 안내하세요" in out
     assert "film" not in out  # '공연영화학부'의 '화학'은 일치로 보지 않는다
+    assert "원문: https://www.dankook.ac.kr/web/kor/-sci" in out  # 연락처를 가져온 단과대학 페이지
     # 레지스트리에 있지만 검토 전인 소스는 미지원으로, dept_list의 연락처와 함께
     out = tools.list_sources(query="검토전")
     assert "[검색 미지원] p: 검토전학과" in out and "031-8005-2222" in out

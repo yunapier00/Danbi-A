@@ -465,7 +465,8 @@ class SiteTools:
                 continue
             seen.add(src.id)
             supported = src.reviewed and src.id in self.adapters
-            office = self._office(src.office or (dept.office if dept else {}))
+            office_raw = src.office or (dept.office if dept else {})
+            office = self._office(office_raw) + self._office_page(office_raw, dept)
             where = ", ".join(x for x in (src.college or (dept.college if dept else ""), src.campus) if x)
             if supported:
                 line = f"- [검색 지원] {src.id}: {src.name}" + (f" ({where})" if where else "")                     + (f" 별칭: {', '.join(src.aliases)}" if src.aliases else "")
@@ -480,7 +481,8 @@ class SiteTools:
             if (q and not any(q in norm(n) for n in names)) or (campus and dept.campus != campus):
                 continue
             where = ", ".join(x for x in (dept.college, dept.campus) if x)
-            rows.append((1, self._unsupported_line(dept.id, dept.name, where, self._office(dept.office), dept.homepage)))
+            office = self._office(dept.office) + self._office_page(dept.office, dept)
+            rows.append((1, self._unsupported_line(dept.id, dept.name, where, office, dept.homepage)))
 
         cond = ", ".join(x for x in (f"'{query}'" if query else "", campus or "") if x) or "전체"
         if not rows:
@@ -496,6 +498,13 @@ class SiteTools:
     def _office(office: dict) -> str:
         parts = [f"전화 {office['tel']}" if office.get("tel") else "", f"사무실 {office['room']}" if office.get("room") else ""]
         return "학과 사무실: " + ", ".join(p for p in parts if p) if any(parts) else ""
+
+    @staticmethod
+    def _office_page(office: dict, dept) -> str:
+        """연락처가 학교 공식 학과 목록에서 온 것이면, 그 단과대학 페이지를 원문으로 붙인다."""
+        if office and dept and dept.source_page and office == dept.office:
+            return f"\n  원문: {dept.source_page}"
+        return ""
 
     @staticmethod
     def _unsupported_line(sid: str, name: str, where: str, office: str, homepage: str | None) -> str:

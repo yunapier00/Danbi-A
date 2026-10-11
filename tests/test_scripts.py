@@ -44,7 +44,7 @@ def dept(org_id, full, part, url, tel="031-8005-0000"):
 
 def test_build_merges_shared_sites_and_prefers_first_entry():
     entries = [
-        ("AI융합대학", dept("2", "AI융합대학 소프트웨어학과", "소프트웨어학과", "http://cms.dankook.ac.kr/web/sw")),
+        ("AI융합대학", dept("2", "AI융합대학 소프트웨어학과", "소프트웨어학과", "http://cms.dankook.ac.kr/web/sw"), "https://w/ai"),
         ("사회과학대학", dept("3", "사회과학대학 미디어커뮤니케이션학부 저널리즘전공", "저널리즘전공", "https://cms.dankook.ac.kr/web/comm")),
         ("사회과학대학", dept("4", "사회과학대학 미디어커뮤니케이션학부 광고홍보전공", "광고홍보전공", "https://cms.dankook.ac.kr/web/comm/")),
         ("학부", dept("1", "SW융합대학 소프트웨어학과", "소프트웨어학과", "https://cms.dankook.ac.kr/web/sw")),  # 옛 조직
@@ -53,6 +53,7 @@ def test_build_merges_shared_sites_and_prefers_first_entry():
     ]
     out = build(entries)
     assert out["sw"]["college"] == "AI융합대학" and out["sw"]["org_ids"] == ["2", "1"]
+    assert out["sw"]["source_page"] == "https://w/ai" and "source_page" not in out["comm"]  # 연락처를 가져온 페이지
     assert out["comm"]["name"] == "저널리즘전공·광고홍보전공"
     assert out["comm"]["college"] == "사회과학대학 미디어커뮤니케이션학부"
     assert out["org-9"]["platform"] == "none" and out["org-9"]["campus"] == "죽전"

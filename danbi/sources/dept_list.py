@@ -18,6 +18,7 @@ class Department:
     homepage: str | None = None
     majors: list[str] = field(default_factory=list)
     office: dict[str, str] = field(default_factory=dict)
+    source_page: str | None = None  # 이 학과 정보(연락처)를 가져온 단과대학 페이지
 
 
 def load_dept_list(path: str | Path) -> dict[str, Department]:
@@ -30,6 +31,7 @@ def load_dept_list(path: str | Path) -> dict[str, Department]:
             id=str(k), name=v.get("name", k), college=v.get("college") or "", campus=v.get("campus"),
             platform=v.get("platform") or "none", homepage=v.get("homepage"),
             majors=list(v.get("majors") or []), office=dict(v.get("office") or {}),
+            source_page=v.get("source_page"),
         )
         for k, v in raw.items()
     }

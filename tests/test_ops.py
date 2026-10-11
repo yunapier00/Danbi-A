@@ -174,6 +174,18 @@ def test_board_list_link_after_header():
     assert [r.url for r in extract_sources("query_data", multi)] == ["https://a/-5", "https://a/-6"]
 
 
+def test_list_sources_links_become_sources():
+    text = ("[source: list_sources] '컴퓨터' — 2건 (학과 정보 출처: 학교 메인 사이트 단과대학 페이지)\n"
+            "- [검색 지원] ace: 컴퓨터공학과 (AI융합대학, 죽전)\n  섹션: notice(공지사항)\n"
+            "  학과 사무실: 전화 031-8005-3653\n  원문: https://www.dankook.ac.kr/web/kor/-ai\n"
+            "  홈페이지: https://cms.dankook.ac.kr/web/ace\n"
+            "- [검색 미지원] film: 연극전공·영화전공 (음악·예술대학, 죽전)\n  홈페이지: 없음\n  → 안내하세요.")
+    refs = extract_sources("list_sources", text)
+    assert [(r.source_id, r.title, r.url) for r in refs] == [
+        ("ace", "컴퓨터공학과 학과 사무실 연락처 (학교 학과 소개)", "https://www.dankook.ac.kr/web/kor/-ai"),
+        ("ace", "컴퓨터공학과 홈페이지", "https://cms.dankook.ac.kr/web/ace")]
+
+
 def test_migrates_v1_db_and_purges_ip_first(tmp_path):
     import sqlite3
     db = tmp_path / "old.sqlite"

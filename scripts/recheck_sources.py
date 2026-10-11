@@ -140,9 +140,9 @@ def main() -> None:
     dept_lines = None
     if args.dept_list:
         from .collect_dept_list import build, college_pages, parse_college
-        pages = [parse_college(http.get(u).text) for u in college_pages(http)]
+        pages = [(*parse_college(http.get(u).text), u) for u in college_pages(http)]
         pages.sort(key=lambda p: p[0] == "학부")
-        fresh = build([(t, d) for t, ds in pages for d in ds])
+        fresh = build([(t, d, u) for t, ds, u in pages for d in ds])
         dept_lines = dept_list_changes(load_dept_list(settings.sources.dept_list_path), fresh)
 
     out = PROJECT_ROOT / "logs" / f"recheck_{date.today()}.md"

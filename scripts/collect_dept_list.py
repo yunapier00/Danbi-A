@@ -106,11 +106,14 @@ def parse_college(html: str) -> tuple[str, list[dict]]:
     return title, depts
 
 
-def build(entries: list[tuple[str, dict]]) -> dict:
-    """(단과대학 페이지 제목, deptData) 목록 → 사이트 단위로 묶은 dept_list."""
+def build(entries: list[tuple]) -> dict:
+    """(단과대학 페이지 제목, deptData[, 페이지 URL]) 목록 → 사이트 단위로 묶은 dept_list.
+
+    페이지 URL은 연락처를 가져온 곳이라 source_page로 남긴다 (list_sources가 '원문:'으로 보여 준다).
+    """
     seen_org: set[str] = set()
     out: dict[str, dict] = {}
-    for college_title, d in entries:
+    for college_title, d, *page in entries:
         org_id = str(d.get("orgId") or "")
         if org_id in seen_org:
             continue
@@ -134,6 +137,8 @@ def build(entries: list[tuple[str, dict]]) -> dict:
             "name": major, "college": college, "campus": campus_of(office.get("tel", ""), college),
             "platform": platform, "homepage": homepage, "majors": [major], "office": office, "org_ids": [org_id],
         }
+        if page and page[0]:
+            out[key]["source_page"] = page[0]
     for e in out.values():
         if len(e["majors"]) > 1:
             e["name"] = "·".join(e["majors"])
@@ -159,11 +164,11 @@ def main() -> None:
             log.warning("단과대학 페이지 실패 %s: %s", url, e)
             continue
         log.info("%s: 학과 %d개", title, len(depts))
-        pages.append((title, depts))
+        pages.append((title, depts, url))
     # '학부' 페이지는 전체 학과 모음이라 옛 조직(예: SW융합대학 소프트웨어학과)이 섞여 있다.
     # 실제 단과대학 페이지를 먼저 처리해 현재 소속이 우선되게 한다.
     pages.sort(key=lambda p: p[0] == AGGREGATE_PAGE)
-    entries = [(title, d) for title, depts in pages for d in depts]
+    entries = [(title, d, url) for title, depts, url in pages for d in depts]
 
     depts = build(entries)
     counts: dict[str, int] = {}
