@@ -91,3 +91,19 @@ async def test_format_shows_merged_location(store):
     r = Retriever(store, RecordingEmbedder({}, default=(0.0, 1.0, 0.0)))
     text = format_chunks(store, "범정관", await r.search("범정관", 1, None))
     assert "(1) 캠퍼스 맵 > 건물 > 범정관" in text and "정문에서 직진" in text
+
+
+async def test_bm25_options_rank_matching_chunks(store):
+    """BM25(검색어·바이그램) 선택지도 동작한다. 기본값은 비교 평가에서 더 나았던 simple (docs/RETRIEVAL.md 9절)."""
+    r = Retriever(store, RecordingEmbedder({}, default=(0.0, 0.0, 1.0)))
+    for lexical in ("bm25", "bm25_bigram"):
+        opts = RetrievalOptions(lexical=lexical, bm25_b=0.3)
+        assert r.lexical_rank("학사경고 기준", None, opts)[0] == "r1"
+        out = await r.search("학사경고 기준", 3, None, opts)
+        assert "r1" in [c.id for c in out]
+    assert RetrievalOptions().lexical == "simple"
+
+
+def test_bm25_idf_prefers_rare_terms(store):
+    r = Retriever(store, RecordingEmbedder({}))
+    assert r._bm25_idf(100, 1) > r._bm25_idf(100, 50) > 0   # 드문 단어일수록 무겁고, 흔해도 음수가 되지 않는다

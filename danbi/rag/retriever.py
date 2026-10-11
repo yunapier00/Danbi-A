@@ -57,6 +57,10 @@ class RetrievalOptions:
     candidates: int = 30      # 섞기 전에 방식마다 뽑는 후보 수
     keyword_weight: float = 0.3   # RRF에서 키워드 순위의 비중 (벡터 = 1). 1.0이면 흔한 단어가 엉뚱한 조항을 끌어올린다
     bm25_b: float = 0.0           # 키워드 본문 일치의 길이 보정 세기. 이 DB는 청크 길이 차이(40~1000자)가 커서 0.3 이상이면 오히려 나빠졌다
+    # 키워드 점수 방식: simple = idf × 포함 여부(제목 3배) / bm25 = 정식 BM25(검색어 단위, 제목 3배 가중)
+    # / bm25_bigram = 글자 2개 단위 BM25 (형태소 분석 없이 쓰는 한국어 기준 방법). 비교는 evals/retrieval_bm25.py
+    lexical: str = "simple"
+    bm25_k1: float = 1.2
     expand_embed: bool = True     # 줄임말이 있으면 공식 용어를 덧붙여 임베딩 ('학고 …' → '학고 … (학사경고)'). 가장 효과가 컸다
 
     @staticmethod
@@ -133,6 +137,68 @@ class Retriever:
                     out += [e for e in expands if e not in query]
         return list(dict.fromkeys(out))
 
+    # --- BM25 -----------------------------------------------------------------------------
+
+    @staticmethod
+    def _bm25_idf(n: int, df: int) -> float:
+        return math.log((n - df + 0.5) / (df + 0.5) + 1)
+
+    def bm25_rank(self, terms: list[str], files: list[str] | None, k1: float, b: float) -> list[str]:
+        """정식 BM25 (검색어 단위). tf = 본문 출현 수 + 3 × 제목 출현 수, 길이는 본문 글자 수."""
+        if not terms:
+            return []
+        idf = {t: self._bm25_idf(self._n, self._df(t)) for t in terms}
+        scores: dict[str, float] = {}
+        for i in self.chunks:
+            if files and self.chunks[i].source not in files:
+                continue
+            norm = k1 * (1 - b + b * len(self._body[i]) / self._avg_len)
+            s = 0.0
+            for t, w in idf.items():
+                tf = self._body[i].count(t) + 3 * self._head[i].count(t)
+                if tf:
+                    s += w * tf * (k1 + 1) / (tf + norm)
+            if s > 0:
+                scores[i] = s
+        return sorted(scores, key=lambda i: -scores[i])
+
+    @staticmethod
+    def _bigrams(text: str) -> list[str]:
+        s = "".join(re.findall(r"[0-9A-Za-z가-힣]+", text))
+        return [s[j:j + 2] for j in range(len(s) - 1)]
+
+    def _bigram_index(self):
+        if not hasattr(self, "_bg"):
+            from collections import Counter
+            tf = {i: Counter(self._bigrams(self._head[i] * 3 + self._body[i])) for i in self.chunks}  # 제목 3배
+            df = Counter(g for c in tf.values() for g in c)
+            lens = {i: sum(c.values()) for i, c in tf.items()}
+            self._bg = (tf, df, lens, sum(lens.values()) / max(1, len(lens)))
+        return self._bg
+
+    def bm25_bigram_rank(self, query: str, extra: list[str], files: list[str] | None, k1: float, b: float) -> list[str]:
+        """글자 2개 단위 BM25. 질문 문장 + 줄임말 확장어를 바이그램으로 자른다 (불용어는 idf가 낮아 저절로 약해진다)."""
+        tf, df, lens, avg = self._bigram_index()
+        q = set(self._bigrams(" ".join([query, *extra])))
+        idf = {g: self._bm25_idf(self._n, df[g]) for g in q if df.get(g)}
+        scores: dict[str, float] = {}
+        for i, c in tf.items():
+            if files and self.chunks[i].source not in files:
+                continue
+            norm = k1 * (1 - b + b * lens[i] / avg)
+            s = sum(w * c[g] * (k1 + 1) / (c[g] + norm) for g, w in idf.items() if c.get(g))
+            if s > 0:
+                scores[i] = s
+        return sorted(scores, key=lambda i: -scores[i])
+
+    def lexical_rank(self, query: str, files: list[str] | None, opts: "RetrievalOptions") -> list[str]:
+        if opts.lexical == "bm25":
+            return self.bm25_rank(self.terms(query, opts.glossary), files, opts.bm25_k1, opts.bm25_b)
+        if opts.lexical == "bm25_bigram":
+            return self.bm25_bigram_rank(query, self.expansions(query) if opts.glossary else [], files,
+                                         opts.bm25_k1, opts.bm25_b)
+        return self.keyword_rank(self.terms(query, opts.glossary), files, opts.bm25_b)
+
     def keyword_rank(self, terms: list[str], files: list[str] | None, b: float = 0.0) -> list[str]:
         """제목 일치는 3배. 드문 말일수록 무겁게 (idf).
         본문 일치는 BM25처럼 길이로 나눈다: 긴 청크(PDF 표 덩어리 등)는 아무 단어나 품고 있어 점수가 부풀기 때문이다."""
@@ -184,7 +250,7 @@ class Retriever:
         ranks: list[tuple[float, list[str]]] = [(1.0, [c.id for c in vec])]
         if opts.hybrid:
             ranks.append((opts.keyword_weight,
-                          self.keyword_rank(self.terms(query, opts.glossary), files, opts.bm25_b)[: opts.candidates]))
+                          self.lexical_rank(query, files, opts)[: opts.candidates]))
         fused: dict[str, float] = defaultdict(float)
         for weight, ranking in ranks:
             for r, cid in enumerate(ranking, 1):
