@@ -45,6 +45,8 @@ def extract_sources(tool_name: str, text: str) -> list[SourceRef]:
         return out
     if tool_name == "list_sources":
         return _dept_links(text)
+    if tool_name == "my_schedule":  # 개인 일정: 링크는 eclass 캘린더 화면 하나
+        return [SourceRef("web", "eclass", "내 eclass 캘린더", line.group(1)) for line in _URL_LINE.finditer(text)][:1]
     title = t.group(1).strip() if (t := _TITLE_LINE.search(text)) else ""
     if not title and (sec := _SECTION.search(text)):
         title = f"{sec.group(1)} {sec.group(2)}"  # 게시판 목록: '소스 게시판이름'

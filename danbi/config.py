@@ -147,6 +147,17 @@ class KakaoSettings:
 
 
 @dataclass
+class PersonalSettings:
+    """사용자 개인 자료 연동 (eclass 캘린더 피드). 저장하는 주소를 암호화할 키 DANBI_SECRET_KEY가 없으면 꺼진다."""
+    eclass_cache_minutes: float = 30   # 받아 온 일정을 사용자별로 메모리에 두는 시간
+
+    @property
+    def secret_key(self) -> str | None:
+        import os
+        return os.environ.get("DANBI_SECRET_KEY") or None
+
+
+@dataclass
 class AgentSettings:
     max_tool_calls: int = 10
     timeout_seconds: float = 60
@@ -169,6 +180,7 @@ class Settings:
     kakao: KakaoSettings = field(default_factory=KakaoSettings)
     auth: AuthSettings = field(default_factory=AuthSettings)
     agent: AgentSettings = field(default_factory=AgentSettings)
+    personal: PersonalSettings = field(default_factory=PersonalSettings)
     enable_docs: bool = False   # /api/docs (DANBI_ENABLE_DOCS=1)
 
 
@@ -209,6 +221,7 @@ def load_settings(path: str | Path | None = None) -> Settings:
         kakao=KakaoSettings(**(raw.get("kakao") or {})),
         auth=AuthSettings(**(raw.get("auth") or {})),
         agent=AgentSettings(**(raw.get("agent") or {})),
+        personal=PersonalSettings(**(raw.get("personal") or {})),
     )
     _apply_env(settings)
     return settings

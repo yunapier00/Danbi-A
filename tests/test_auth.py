@@ -268,6 +268,6 @@ def test_privacy_page(monkeypatch):
     body = res.text
     assert "개인정보처리방침" in body and "mailto:danbi@example.com" in body
     assert "&lt;김단국&gt;" in body and "<김단국>" not in body          # 이름은 HTML로 이스케이프
-    for item in ("이메일 주소", "접속 IP", "Gemini", "Railway", "카카오"):
+    for item in ("이메일 주소", "접속 IP", "Gemini", "Railway", "카카오", "eclass 캘린더 피드 주소"):
         assert item in body
     assert "Content-Security-Policy" in res.headers

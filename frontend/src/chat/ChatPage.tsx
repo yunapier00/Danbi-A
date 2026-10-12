@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import {
-  AlertIcon, ChatIcon, CheckIcon, ClockIcon, CloseIcon, ExternalIcon, LinkIcon, MenuIcon, PlusIcon, SearchIcon, SendIcon,
+  AlertIcon, CalendarIcon, ChatIcon, CheckIcon, ClockIcon, CloseIcon, ExternalIcon, LinkIcon, MenuIcon, PlusIcon, SearchIcon, SendIcon,
   ThumbDownIcon, ThumbUpIcon,
 } from "../components/icons";
 import { GoogleButton, LOGIN_ERRORS } from "../components/GoogleButton";
 import { Logo, LogoMark } from "../components/Logo";
 import { Markdown } from "../lib/markdown";
 import { readSSE } from "../lib/sse";
+import { EclassDialog, fetchEclassStatus, type EclassStatus } from "./EclassDialog";
 import "./chat.css";
 
 interface Source { title: string; url: string }
@@ -18,6 +19,7 @@ interface BotMessage {
   sources: Source[];
   meta: { toolCalls: number; elapsed: number; runId: string | null; rated?: boolean } | null;
   error: string | null;
+  connectEclass?: boolean;  // 개인 일정을 물었는데 eclass가 연결되지 않음 → 연결 버튼
 }
 interface UserMessage { id: number; role: "user"; text: string }
 type Message = UserMessage | BotMessage;
@@ -79,6 +81,8 @@ export default function ChatPage() {
   const [convs, setConvs] = useState<Conversation[] | null>(null);   // 로그인 사용자의 지난 대화
   const [activeId, setActiveId] = useState<string | null>(null);
   const [drawer, setDrawer] = useState(false);                        // 모바일 사이드바
+  const [eclass, setEclass] = useState<EclassStatus | null>(null);     // eclass 캘린더 연결 상태
+  const [eclassOpen, setEclassOpen] = useState(false);
   const sessionId = useRef<string | null>(storage.get());
   const scroller = useRef<HTMLElement>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
@@ -124,8 +128,9 @@ export default function ChatPage() {
   // 로그인했으면 지난 대화 목록을 불러오고, 새로고침 전에 보던 대화를 다시 연다
   const loggedIn = Boolean(me?.user);
   useEffect(() => {
-    if (!loggedIn) { setConvs(null); return; }
+    if (!loggedIn) { setConvs(null); setEclass(null); return; }
     loadConversations();
+    void fetchEclassStatus().then(setEclass);
     const last = storage.get();
     if (last) void openConversation(last, true);
   }, [loggedIn, loadConversations, openConversation]);
@@ -175,6 +180,8 @@ export default function ChatPage() {
           }));
         } else if (event === "error") {
           updateBot(botId, () => ({ error: String(d.message) }));
+        } else if (event === "action" && d.type === "connect_eclass") {
+          updateBot(botId, () => ({ connectEclass: true }));
         }
       }
     } catch (e) {
@@ -295,6 +302,17 @@ export default function ChatPage() {
                 ))}
               </ul>
             )}
+            {eclass?.available && (
+              <div className="sidebar-foot">
+                <button type="button" className="eclass-btn" onClick={() => { setEclassOpen(true); setDrawer(false); }}>
+                  <CalendarIcon />
+                  <span className="conv-title">eclass 일정 연결</span>
+                  <span className={eclass.connected ? (eclass.last_error ? "eclass-state warn" : "eclass-state on") : "eclass-state"}>
+                    {eclass.connected ? (eclass.last_error ? "확인 필요" : "연결됨") : "연결 안 됨"}
+                  </span>
+                </button>
+              </div>
+            )}
           </aside>
         </>
       )}
@@ -307,7 +325,8 @@ export default function ChatPage() {
           */}
           {messages.map((m) => (m.role === "user"
             ? <div key={m.id} className="row row-user"><div className="bubble user">{m.text}</div></div>
-            : <BotBubble key={m.id} m={m} />))}
+            : <BotBubble key={m.id} m={m}
+                         onConnect={eclass?.available && !eclass.connected ? () => setEclassOpen(true) : undefined} />))}
         </div>
       </main>
       <footer className="composer-wrap">
@@ -332,6 +351,7 @@ export default function ChatPage() {
       </footer>
       </div>
       </div>}
+      <EclassDialog open={eclassOpen} status={eclass} onClose={() => setEclassOpen(false)} onChange={setEclass} />
     </div>
   );
 }
@@ -340,7 +360,7 @@ function hostOf(url: string): string {
   try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return url; }
 }
 
-function BotBubble({ m }: { m: BotMessage }) {
+function BotBubble({ m, onConnect }: { m: BotMessage; onConnect?: () => void }) {
   const thinking = m.status !== null && !m.text && !m.error;
   return (
     <div className="row row-bot">
@@ -354,6 +374,9 @@ function BotBubble({ m }: { m: BotMessage }) {
         )}
         {m.text && <Markdown className="answer" text={m.text} />}
         {m.error && <p className="error"><AlertIcon /> {m.error}</p>}
+        {m.connectEclass && onConnect && (
+          <button type="button" className="connect-cta" onClick={onConnect}><CalendarIcon /> eclass 연결하기</button>
+        )}
         {m.sources.length > 0 && (
           <div className="sources">
             <div className="sources-title"><LinkIcon /> 원문 {m.sources.length}개</div>

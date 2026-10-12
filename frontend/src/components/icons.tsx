@@ -9,7 +9,10 @@ const base = (size: number): SVGProps<SVGSVGElement> => ({
 export const MenuIcon = ({ size = 18 }: { size?: number }) => (
   <svg {...base(size)}><path d="M4 6h16" /><path d="M4 12h16" /><path d="M4 18h16" /></svg>
 );
-export const ChatIcon = ({ size = 15 }: { size?: number }) => (
+export const CalendarIcon = ({ size = 15 }: { size?: number }) => (
+  <svg {...base(size)}><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4" /><path d="M8 3v4" /><path d="M3 10h18" /></svg>
+);
+export const ChatIcon =({ size = 15 }: { size?: number }) => (
   <svg {...base(size)}><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z" /></svg>
 );
 export const CloseIcon = ({ size = 18 }: { size?: number }) => (

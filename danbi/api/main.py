@@ -9,8 +9,10 @@ POST /api/chat  {"message": "...", "session_id": "...(선택)"}  → text/event-
   event: sources  {"items": [{"title", "url"}]}    도구 결과에서 모은 원문 링크
   event: done     {"run_id", "stop_reason", "tool_calls", "elapsed", "usage"}
   event: error    {"message"}
+  event: action   {"type": "connect_eclass"}     eclass를 연결하지 않은 사용자가 개인 일정을 물었을 때 (연결 버튼 표시)
 POST /api/reset {"session_id"}                     대화 기록 삭제
 POST /api/feedback {"run_id", "rating": 1|-1, "comment"}   답변 평가 (추적 DB에 저장)
+GET|PUT|DELETE /api/integrations/eclass            eclass 캘린더 피드 연결 상태·등록({"url"})·해제 (웹 로그인 사용자)
 GET  /dev                                          개발자 전용 LLMOps 페이지 (admin.py)
 """
 
@@ -34,11 +36,15 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Streamin
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from ..agent.tools.personal import CONNECT_MARK
 from ..agent.loop import FALLBACK_ANSWER, LIMIT_ANSWER, Agent, FinalEvent, TokenEvent, ToolEndEvent, ToolStartEvent
 from ..config import AuthSettings, KakaoSettings, LimitSettings
 from ..llm.base import Message
 from ..ops import TraceRecorder, new_run_id
 from ..ops.sources import extract_sources
+from ..personal.context import CURRENT_USER, CurrentUser
+from ..personal.eclass import EclassError, EclassService
+from ..personal.ics import KST as _KST
 from .admin import mount_admin
 from .auth import Auth, mount_auth
 from .privacy import render_privacy
@@ -64,6 +70,10 @@ class ChatRequest(BaseModel):
 
 class ResetRequest(BaseModel):
     session_id: str = Field(max_length=64)
+
+
+class EclassConnectRequest(BaseModel):
+    url: str = Field(min_length=10, max_length=300)
 
 
 class FeedbackRequest(BaseModel):
@@ -266,11 +276,13 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
                admin_token: str | None = None, store_client_ip: bool = True, trust_proxy: bool = False,
                proxy_hops: int = 1, limits: LimitSettings | None = None, enable_docs: bool = False,
                kakao: KakaoSettings | None = None, kakao_http=None, auth: AuthSettings | None = None,
-               auth_http=None, auth_verifier=None, public_url: str | None = None, memory: bool = True) -> FastAPI:
+               auth_http=None, auth_verifier=None, public_url: str | None = None, memory: bool = True,
+               eclass: EclassService | None = None) -> FastAPI:
     """recorder를 주면 모든 대화를 추적 DB에 기록하고 개발자 페이지(/dev)를 연다.
     auth를 주면 Google 로그인을 쓰고, auth.allow_anonymous가 꺼져 있으면 웹 채팅에 로그인이 필요하다.
     auth가 없으면(테스트·로컬) 예전처럼 로그인 없이 IP 기준으로 쓴다.
-    memory=False면 같은 대화의 이전 질문·답변을 LLM에 보내지 않는다 (질문마다 따로 답한다, 기록은 그대로 저장)."""
+    memory=False면 같은 대화의 이전 질문·답변을 LLM에 보내지 않는다 (질문마다 따로 답한다, 기록은 그대로 저장).
+    eclass를 주면 로그인 사용자가 자기 eclass 캘린더 피드를 연결할 수 있다 (my_schedule 도구가 읽는다)."""
     app = FastAPI(title="단비 API", docs_url="/api/docs" if enable_docs else None,
                   openapi_url="/api/openapi.json" if enable_docs else None, redoc_url=None)
     limits = limits or LimitSettings()
@@ -392,6 +404,37 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
             raise HTTPException(404, "대화를 찾을 수 없습니다.")
         return {"id": conversation_id, "messages": messages}
 
+    eclass_limiter = RateLimiter(5, 600)  # 등록할 때마다 eclass에 한 번 요청하므로 사용자당 10분에 5번
+
+    @app.get("/api/integrations/eclass")
+    def eclass_status(request: Request):
+        user, _ = logged_in(request)
+        if eclass is None:
+            return {"available": False, "connected": False}
+        return eclass.status(user["id"])
+
+    @app.put("/api/integrations/eclass")
+    async def eclass_connect(req: EclassConnectRequest, request: Request):
+        user, ukey = logged_in(request)
+        if eclass is None or not eclass.enabled:
+            raise HTTPException(503, "이 서버에서는 eclass 연결 기능이 꺼져 있어요.")
+        if not eclass_limiter.allow(ukey):
+            raise HTTPException(429, "등록 시도가 많아요. 잠시 후 다시 시도해 주세요.")
+        try:
+            fetched = await asyncio.to_thread(eclass.connect, user["id"], req.url)
+        except EclassError as e:
+            raise HTTPException(400, str(e))
+        today = datetime.now(_KST).date()
+        return {**eclass.status(user["id"]), "events": len(fetched.events),
+                "upcoming": sum(1 for e in fetched.events if e.day >= today)}
+
+    @app.delete("/api/integrations/eclass")
+    def eclass_disconnect(request: Request):
+        user, _ = logged_in(request)
+        if eclass is not None:
+            eclass.disconnect(user["id"])
+        return {"ok": True}
+
     @app.post("/api/chat")
     async def chat(req: ChatRequest, request: Request):
         user, client, ip, ukey = identity(request)
@@ -417,24 +460,28 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
         if session.busy:
             raise HTTPException(409, "이전 질문에 아직 답하는 중입니다.")
         session.busy_since = time.monotonic()  # 응답 생성 전에 표시해야 동시 요청을 막을 수 있다
-        return StreamingResponse(_stream(sid, session, req.message.strip(), ip, ukey, remaining),
+        me = CurrentUser(int(user["id"]), ukey) if user is not None else None
+        return StreamingResponse(_stream(sid, session, req.message.strip(), ip, ukey, remaining, me),
                                  media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
     async def _stream(sid: str, session: Session, message: str, ip: str | None, ukey: str | None,
-                      remaining: int | None = None) -> AsyncIterator[str]:
+                      remaining: int | None = None, me: CurrentUser | None = None) -> AsyncIterator[str]:
         # 동시 처리 상한: 슬롯이 없으면 기다리지 않고 바로 알린다 (응답이 시작된 뒤에 잡아야 슬롯이 새지 않는다)
         if slots.locked():
             session.busy_since = None
             yield _sse("error", {"message": "지금 질문이 많아요. 잠시 후 다시 시도해 주세요."})
             return
         async with slots:
-            async for chunk in _answer(sid, session, message, ip, ukey, remaining):
+            async for chunk in _answer(sid, session, message, ip, ukey, remaining, me):
                 yield chunk
 
     async def _answer(sid: str, session: Session, message: str, ip: str | None, ukey: str | None,
-                      remaining: int | None) -> AsyncIterator[str]:
+                      remaining: int | None, me: CurrentUser | None = None) -> AsyncIterator[str]:
+        # 개인 자료 도구는 이 값으로만 사용자를 안다. 이 응답을 만드는 태스크에서 설정하면 도구 실행에도 이어진다
+        CURRENT_USER.set(me)
         run_id = new_run_id()
+        asked_connect = False
         links: dict[str, dict] = {}
         final: FinalEvent | None = None
         events = agent.run(message, history=session.history if memory else [])
@@ -449,6 +496,10 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
                 elif isinstance(ev, ToolStartEvent):
                     texts = list(dict.fromkeys(agent.tools.describe(c) for c in ev.calls))
                     yield _sse("status", {"text": " · ".join(texts), "tools": [c.name for c in ev.calls]})
+                elif isinstance(ev, ToolEndEvent) and CONNECT_MARK in ev.result.content[:200]:
+                    if not asked_connect and me is not None:
+                        asked_connect = True
+                        yield _sse("action", {"type": "connect_eclass"})
                 elif isinstance(ev, ToolEndEvent) and not ev.result.is_error:
                     for ref in extract_sources(ev.result.name, ev.result.content):
                         if ref.url:
@@ -477,13 +528,16 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
 
 
 def build_default_app() -> FastAPI:
-    from ..bootstrap import build_agent, build_recorder
+    from ..bootstrap import build_agent, build_eclass, build_recorder
     from ..config import load_settings
+    from ..ops import TraceStore
 
     settings = load_settings()
-    agent = build_agent(settings)
-    return create_app(agent, recorder=build_recorder(settings, agent), admin_token=settings.ops.admin_token,
+    store = TraceStore(settings.ops.db_path)
+    eclass = build_eclass(settings, store)
+    agent = build_agent(settings, eclass=eclass)
+    return create_app(agent, recorder=build_recorder(settings, agent, store), admin_token=settings.ops.admin_token,
                       store_client_ip=settings.ops.store_client_ip, trust_proxy=settings.ops.trust_proxy_headers,
                       proxy_hops=settings.ops.proxy_hops, limits=settings.limits, enable_docs=settings.enable_docs,
                       kakao=settings.kakao, auth=settings.auth, public_url=settings.auth.public_url,
-                      memory=settings.agent.memory)
+                      memory=settings.agent.memory, eclass=eclass)

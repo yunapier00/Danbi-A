@@ -28,6 +28,7 @@ Dockerfile로 빌드합니다(`railway.json`). 이미지 하나에 React 화면�
 | `DANBI_OPERATOR` | 운영자 이름 | 개인정보처리방침(`/privacy`)의 책임자 |
 | `DANBI_PRIVACY_CONTACT` | 문의 이메일 | 개인정보처리방침의 문의처 (Google 앱 게시에 필요한 페이지) |
 | `DANBI_ADMIN_TOKEN` | (선택) 긴 무작위 문자열 | 개발자 페이지 비상용 토큰. 비워 두면 Google 로그인만. 예: `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
+| `DANBI_SECRET_KEY` | 긴 무작위 문자열 | eclass 캘린더 피드 주소를 암호화해 저장하는 키. 없으면 eclass 연결 메뉴가 숨겨집니다. **한 번 정하면 바꾸지 마세요** (바꾸면 연결한 사용자 모두 다시 등록해야 함). 예: `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
 | `DANBI_TRUST_PROXY` | `1` | Railway 프록시 뒤라 필수. 없으면 모든 사용자가 같은 IP로 보여 요청 제한을 함께 나눠 씁니다 |
 | `DANBI_PROXY_HOPS` | `1` (기본) | Railway 앞단 프록시 수. IP가 이상하게 찍히면 개발자 페이지에서 확인 후 조정 |
 | `DANBI_ENABLE_DOCS` | (비워 둠) | `1`이면 `/api/docs` 공개. 운영에서는 끄세요 |

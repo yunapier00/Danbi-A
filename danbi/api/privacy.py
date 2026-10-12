@@ -9,7 +9,7 @@ from __future__ import annotations
 import html
 import os
 
-EFFECTIVE_DATE = "2026년 10월 6일"
+EFFECTIVE_DATE = "2026년 10월 12일"
 
 _STYLE = """
 body{margin:0;background:#f8fafc;color:#0f172a;font:15px/1.7 system-ui,-apple-system,"Segoe UI","Malgun Gothic",sans-serif}
@@ -41,6 +41,8 @@ def render_privacy() -> str:
 <tr><th>구분</th><th>항목</th></tr>
 <tr><td>웹 (학교 Google 계정 로그인)</td><td>이메일 주소, 이름, Google 계정 고유 식별자, 소속 도메인(dankook.ac.kr)</td></tr>
 <tr><td>카카오톡 채널</td><td>카카오가 제공하는 사용자 식별값을 되돌릴 수 없게 변환(해시)한 값 (원래 식별값은 저장하지 않음)</td></tr>
+<tr><td>eclass 일정 연결 (선택, 웹)</td><td>이용자가 직접 등록한 eclass(Canvas) 캘린더 피드 주소 (암호화해 저장).
+피드에서 읽은 과제·일정은 저장하지 않고, 답변에 쓰기 위해 서버 메모리에 최대 30분 동안만 둡니다.</td></tr>
 <tr><td>이용 과정에서 자동 생성</td><td>접속 IP 주소, 로그인·이용 일시, 질문과 답변 내용, 답변 평가(좋아요·아쉬워요), 로그인 유지용 쿠키</td></tr>
 </table>
 <p>질문 내용에 개인정보를 적지 않도록 주의해 주세요. 적은 내용도 질문 기록으로 저장됩니다.</p>
@@ -52,17 +54,19 @@ def render_privacy() -> str:
 <h2>3. 이용 목적</h2>
 <ul><li>단국대학교 구성원 여부 확인과 로그인 유지</li>
 <li>질문에 대한 답변 제공과 대화 이어 가기</li>
+<li>eclass를 연결한 경우, 이용자 본인이 물을 때 본인의 과제 마감·일정 안내</li>
 <li>1인당 이용 횟수 제한, 부정 이용 방지</li>
 <li>답변 품질 개선, 오류 분석, 서비스 운영 기록(감사) 관리</li></ul>
 
 <h2>4. 보유 및 이용 기간</h2>
 <p>개인정보는 서비스를 운영하는 동안 보관합니다. 이용자가 삭제를 요청하거나 서비스를 종료하면 지체 없이 파기합니다.
 다만 관련 법령에 따라 보존해야 하는 경우에는 그 기간 동안 보관합니다.</p>
+<p>eclass 캘린더 피드 주소는 이용자가 연결을 해제하면 즉시 삭제합니다. 일정에 관한 질문과 답변은 다른 질문과 같이 질문 기록으로 보관됩니다.</p>
 
 <h2>5. 처리 위탁 및 국외 이전</h2>
 <table>
 <tr><th>받는 곳</th><th>업무</th><th>이전 국가·방법</th></tr>
-<tr><td>Google LLC</td><td>Google 로그인 인증, 질문에 대한 답변 생성(Gemini API)과 문서 검색용 임베딩</td><td>미국 등 · 이용 시마다 네트워크로 전송</td></tr>
+<tr><td>Google LLC</td><td>Google 로그인 인증, 질문에 대한 답변 생성(Gemini API, eclass 일정을 물으면 해당 일정 포함)과 문서 검색용 임베딩</td><td>미국 등 · 이용 시마다 네트워크로 전송</td></tr>
 <tr><td>Railway Corp.</td><td>서버 운영과 데이터 저장</td><td>미국 · 서비스 운영 기간 동안 저장</td></tr>
 <tr><td>(주)카카오</td><td>카카오톡 채널 메시지 송수신</td><td>대한민국 · 카카오톡 이용 시</td></tr>
 </table>
@@ -76,6 +80,7 @@ def render_privacy() -> str:
 
 <h2>8. 안전성 확보 조치</h2>
 <ul><li>모든 통신은 HTTPS로 암호화합니다.</li>
+<li>eclass 캘린더 피드 주소는 암호화해 저장하고, 운영 기록에는 피드에서 읽은 일정 내용을 남기지 않습니다.</li>
 <li>로그인 유지 정보는 브라우저 스크립트가 읽을 수 없는 쿠키에 담고, 서버에는 그 값을 되돌릴 수 없게 변환(해시)해 저장합니다. Google의 인증 토큰은 저장하지 않습니다.</li>
 <li>운영 기록 열람은 지정된 관리자로 제한하고, 열람 기록을 위·변조를 확인할 수 있는 감사 로그로 남깁니다.</li></ul>
 

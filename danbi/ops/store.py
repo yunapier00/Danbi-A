@@ -19,7 +19,7 @@ import threading
 import time
 from pathlib import Path
 
-SCHEMA_VERSION = 4  # 2: runs.client_ip, 3: runs.user_key, 4: users·auth_sessions (Google 로그인)
+SCHEMA_VERSION = 5  # 2: runs.client_ip, 3: runs.user_key, 4: users·auth_sessions (Google 로그인), 5: user_integrations
 MAX_TEXT = 50_000  # 도구 결과·답변 저장 상한 (감사용으로 거의 전부 남긴다)
 
 SCHEMA = """
@@ -144,6 +144,16 @@ CREATE TABLE IF NOT EXISTS auth_sessions (         -- 로그인 세션. 쿠키 �
     last_seen_at  REAL NOT NULL,
     expires_at    REAL NOT NULL,
     ip            TEXT
+);
+CREATE TABLE IF NOT EXISTS user_integrations (     -- 사용자 개인 자료 연동 (예: eclass 캘린더 피드)
+    user_id       INTEGER NOT NULL REFERENCES users(id),
+    kind          TEXT NOT NULL,                    -- eclass_ics
+    secret        TEXT NOT NULL,                    -- 암호화한 값 (Fernet, 키 = DANBI_SECRET_KEY). 원문은 저장하지 않음
+    created_at    REAL NOT NULL,
+    updated_at    REAL NOT NULL,
+    last_ok_at    REAL,
+    last_error    TEXT,
+    PRIMARY KEY (user_id, kind)
 );
 CREATE INDEX IF NOT EXISTS idx_runs_started ON runs(started_at);
 CREATE INDEX IF NOT EXISTS idx_auth_user ON auth_sessions(user_id);
@@ -507,6 +517,27 @@ class TraceStore:
             self._db.commit()
 
     # --- 사용자 대화 기록 (웹 채팅 사이드바) ------------------------------------------------
+
+    def get_integration(self, user_id: int, kind: str) -> dict | None:
+        return self._one("SELECT * FROM user_integrations WHERE user_id = ? AND kind = ?", (user_id, kind))
+
+    def save_integration(self, user_id: int, kind: str, secret: str) -> None:
+        now = time.time()
+        self._exec("INSERT INTO user_integrations (user_id, kind, secret, created_at, updated_at) VALUES (?, ?, ?, ?, ?) "
+                   "ON CONFLICT(user_id, kind) DO UPDATE SET secret = excluded.secret, created_at = excluded.created_at, "
+                   "updated_at = excluded.updated_at, last_ok_at = NULL, last_error = NULL",
+                   (user_id, kind, secret, now, now))
+
+    def mark_integration(self, user_id: int, kind: str, *, ok: bool, error: str | None = None) -> None:
+        if ok:
+            self._exec("UPDATE user_integrations SET last_ok_at = ?, last_error = NULL WHERE user_id = ? AND kind = ?",
+                       (time.time(), user_id, kind))
+        else:
+            self._exec("UPDATE user_integrations SET last_error = ? WHERE user_id = ? AND kind = ?",
+                       ((error or "")[:300], user_id, kind))
+
+    def delete_integration(self, user_id: int, kind: str) -> None:
+        self._exec("DELETE FROM user_integrations WHERE user_id = ? AND kind = ?", (user_id, kind))
 
     def user_conversations(self, user_key: str, *, channel: str = "web", limit: int = 50) -> list[dict]:
         """사용자의 대화 목록 (최근에 이어 쓴 순). 제목은 첫 질문."""

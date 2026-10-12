@@ -12,8 +12,10 @@ from .llm import create_provider, options_from_settings
 log = logging.getLogger(__name__)
 
 
-def build_tools(settings: Settings) -> ToolRegistry:
+def build_tools(settings: Settings, eclass=None) -> ToolRegistry:
+    """eclass(EclassService)가 없어도 my_schedule은 늘 등록한다 (도구 정의가 채널마다 같아야 프롬프트 캐시가 유지된다)."""
     from .agent.tools.knowledge import make_search_knowledge
+    from .agent.tools.personal import make_my_schedule
     from .rag.chroma_store import ChromaStore
     from .rag.embedder import GeminiEmbedder
 
@@ -27,7 +29,20 @@ def build_tools(settings: Settings) -> ToolRegistry:
 
     for tool in build_site_tools(settings).tools():
         registry.register(tool)
+    registry.register(make_my_schedule(eclass))
     return registry
+
+
+def build_eclass(settings: Settings, store):
+    """eclass 캘린더 피드 연동 (웹 로그인 사용자). DANBI_SECRET_KEY가 없으면 꺼진 상태로 만든다."""
+    from .crawler.http import HttpClient
+    from .personal.eclass import EclassService
+
+    c, p = settings.crawler, settings.personal
+    if not p.secret_key:
+        log.info("eclass 연결 꺼짐: DANBI_SECRET_KEY 없음")
+    http = HttpClient(c.user_agent, min_interval=c.min_interval, timeout=c.timeout, retries=c.retries)
+    return EclassService(store, http, p.secret_key, p.eclass_cache_minutes)
 
 
 def load_snapshots(settings: Settings) -> dict[str, list[dict]]:
@@ -63,18 +78,18 @@ def build_site_tools(settings: Settings):
     return SiteTools(sources, adapters, settings.agent.inline_source_limit, cache=cache, departments=departments)
 
 
-def build_agent(settings: Settings, *, with_tools: bool = True) -> Agent:
+def build_agent(settings: Settings, *, with_tools: bool = True, eclass=None) -> Agent:
     return Agent(
         create_provider(settings.llm),
-        build_tools(settings) if with_tools else ToolRegistry(),
+        build_tools(settings, eclass) if with_tools else ToolRegistry(),
         options=options_from_settings(settings.llm),
         max_tool_calls=settings.agent.max_tool_calls,
         timeout_seconds=settings.agent.timeout_seconds,
     )
 
 
-def build_recorder(settings: Settings, agent: Agent):
+def build_recorder(settings: Settings, agent: Agent, store=None):
     """추적 DB 기록기. CLI·API·평가가 같은 DB에 채널만 달리해서 기록한다."""
     from .ops import TraceRecorder, TraceStore
 
-    return TraceRecorder(TraceStore(settings.ops.db_path), agent, settings.llm.pricing)
+    return TraceRecorder(store or TraceStore(settings.ops.db_path), agent, settings.llm.pricing)

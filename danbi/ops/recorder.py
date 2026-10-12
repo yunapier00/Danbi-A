@@ -22,6 +22,15 @@ from .store import STATUS_OF_STOP, TraceStore
 
 log = logging.getLogger(__name__)
 
+# 사용자 개인 자료를 돌려주는 도구. 추적 DB에는 결과의 첫 줄(건수·기간)만 남긴다 (/dev에서 관리자가 보지 않게)
+PRIVATE_TOOLS = {"my_schedule"}
+
+
+def stored_result(name: str, content: str) -> str:
+    if name not in PRIVATE_TOOLS:
+        return content
+    return content.split("\n", 1)[0] + f"\n…(개인 자료라 내용은 저장하지 않음, 원래 {len(content):,}자)"
+
 
 def new_run_id() -> str:
     return uuid.uuid4().hex
@@ -83,7 +92,8 @@ class TraceRecorder:
                     row = self._safe(self.store.add_tool_call, run_id, llm_seq=ev.llm_seq, call_id=r.call_id,
                                      name=r.name, arguments=args_of.get(r.call_id, {}),
                                      status_text=status_text.get(r.call_id, ""), started=ev.started or time.time(),
-                                     ended=ev.ended or time.time(), is_error=r.is_error, result=r.content)
+                                     ended=ev.ended or time.time(), is_error=r.is_error,
+                                     result=stored_result(r.name, r.content))
                     if row and not r.is_error:
                         refs += [(row, ref) for ref in extract_sources(r.name, r.content)]
                 elif isinstance(ev, FinalEvent):
