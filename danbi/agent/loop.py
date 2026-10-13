@@ -224,7 +224,7 @@ class Agent:
         now = time.time()
         return [
             t.result() if t not in pending
-            else (ToolResult(c.id, c.name, "시간 상한 안에 결과를 받지 못했습니다. 다른 소스의 결과로 답변하세요.", True),
+            else (ToolResult(c.id, c.name, self.tools.timeout_message(c.name), True),
                   batch_start, now)
             for c, t in zip(calls, tasks)
         ]

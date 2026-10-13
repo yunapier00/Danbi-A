@@ -27,6 +27,7 @@ class Tool:
     spec: ToolSpec
     func: Callable[..., Any]  # (**arguments) -> str  (동기 또는 async)
     status: Callable[[dict], str] | None = None  # 인자 → 사용자에게 보여줄 진행 상태 문구
+    timeout_hint: str | None = None  # 시간 상한에 걸렸을 때 에이전트에게 덧붙일 안내 (예: 작업은 계속되니 다시 물으라)
 
 
 class ToolRegistry:
@@ -46,6 +47,13 @@ class ToolRegistry:
 
     def __len__(self) -> int:
         return len(self._tools)
+
+    def timeout_message(self, name: str) -> str:
+        tool = self._tools.get(name)
+        base = "시간 상한 안에 결과를 받지 못했습니다."
+        if tool and tool.timeout_hint:
+            return f"{base} {tool.timeout_hint}"
+        return f"{base} 다른 소스의 결과로 답변하세요."
 
     def describe(self, call: ToolCall) -> str:
         tool = self._tools.get(call.name)

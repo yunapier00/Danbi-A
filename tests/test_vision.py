@@ -160,6 +160,64 @@ def test_failed_reading_is_reported_not_raised():
     assert "(판독하지 못함: 이미지를 판독하지 못했습니다)" in out
 
 
+def test_scanned_pdf_without_fonts_is_detected_early(monkeypatch):
+    import pdfminer.high_level
+
+    from danbi.crawler.extract.documents import extract_text
+    seen = []
+    real = pdfminer.high_level.extract_pages
+
+    def spy(fp, maxpages=0, **kw):
+        seen.append(maxpages)
+        return real(fp, maxpages=maxpages, **kw)
+
+    monkeypatch.setattr(pdfminer.high_level, "extract_pages", spy)
+    fontless = (make_pdf(["", "", ""]).replace(b"/Type /Font /Subtype /Type1 /BaseFont /Helvetica", b"/Type /Null")
+                .replace(b"/Font << /F1 3 0 R >>", b""))
+    assert b"/Font" not in fontless
+    with pytest.raises(UnsupportedDocument, match="텍스트가 없는"):
+        extract_text("a.pdf", fontless)
+    assert seen == [2]                                   # 앞 2쪽만 보고 끝낸다 (전체 추출 생략)
+    seen.clear()
+    with pytest.raises(UnsupportedDocument, match="텍스트가 없는"):
+        extract_text("a.pdf", SCAN_PDF)                  # 글꼴이 있으면 끝까지 읽어 보고 판단
+    assert seen == [60]                                  # MAX_PDF_PAGES
+    seen.clear()
+    assert "[p.2]" in extract_text("a.pdf", make_pdf(["", "Hello page two"]))   # 앞쪽이 비어도 글꼴이 있으면 끝까지 읽는다
+
+
+def test_same_file_is_read_once_when_asked_twice_at_the_same_time():
+    import threading
+    import time as _time
+
+    class SlowProvider(FakeVisionProvider):
+        def read_document(self, *a, **k):
+            _time.sleep(0.3)
+            return super().read_document(*a, **k)
+
+    url = "https://cms.dankook.ac.kr/scan.pdf"
+    item = Item(9, "매뉴얼", "https://cms.dankook.ac.kr/web/t/-1?id=9", "2026.10.06",
+                attachments=[Attachment("매뉴얼.pdf", url)])
+    provider = SlowProvider()
+    tools, adapter = make(item, {url: SCAN_PDF}, provider)
+    outs = []
+    threads = [threading.Thread(target=lambda: outs.append(tools.read_attachment("t", "notice", 9, 0))) for _ in range(3)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert len(outs) == 3 and len(provider.calls) == 1 and len(adapter.fetched) == 1
+    assert all("범정관 101호" in o for o in outs)
+
+
+def test_slow_read_tools_carry_timeout_hint():
+    item, files = poster_item()
+    tools, _ = make(item, files, FakeVisionProvider())
+    hints = {t.spec.name: t.timeout_hint for t in tools.tools()}
+    assert "1~2분 뒤 같은 질문을 다시" in hints["get_item"] and hints["read_attachment"] == hints["get_item"]
+    assert hints["search_site"] is None
+
+
 def test_scanned_pdf_and_image_attachments_use_vision():
     pdf_url, jpg_url, hwp_url = "https://cms.dankook.ac.kr/scan.pdf", "https://cms.dankook.ac.kr/p.jpg", "https://cms.dankook.ac.kr/x.hwp"
     item = Item(8, "장학 안내", "https://cms.dankook.ac.kr/web/t/-1?id=8", "2026.10.10",

@@ -67,10 +67,18 @@ def extract_pdf(data: bytes) -> str:
 
     pages = []
     try:
+        # 스캔 PDF는 전체 추출이 오래 걸리고(22쪽 10MB에 14초) 결과도 비어 있다. 앞 2쪽에 글자가 없고 파일에
+        # 글꼴도 없으면 바로 '텍스트 없음'으로 끝내 판독으로 넘긴다 (글꼴이 압축 스트림 안에만 있으면 그냥 끝까지 읽는다)
+        if b"/Font" not in data and not any(
+                isinstance(el, LTTextContainer) and el.get_text().strip()
+                for page in extract_pages(io.BytesIO(data), maxpages=2) for el in page):
+            raise UnsupportedDocument("텍스트가 없는 PDF입니다 (스캔 이미지일 수 있음)")
         for n, page in enumerate(extract_pages(io.BytesIO(data), maxpages=MAX_PDF_PAGES), 1):
             text = "".join(el.get_text() for el in page if isinstance(el, LTTextContainer)).strip()
             if text:
                 pages.append(f"[p.{n}]\n{text}")
+    except UnsupportedDocument:
+        raise
     except (PDFPasswordIncorrect, PDFEncryptionError) as e:
         raise UnsupportedDocument("암호가 걸린 PDF입니다") from e
     except Exception as e:

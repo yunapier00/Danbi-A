@@ -167,7 +167,7 @@ class PersonalSettings:
 @dataclass
 class AgentSettings:
     max_tool_calls: int = 10
-    timeout_seconds: float = 60
+    timeout_seconds: float = 90
     inline_source_limit: int = 20
     # 대화 맥락(메모리): 같은 대화의 이전 질문·답변·도구 결과를 다음 질문과 함께 LLM에 보낸다.
     # 질문마다 입력 토큰이 늘어 비용이 커지므로 지금은 꺼 둔다 (2026-10-06 결정, 도입 여부 검토 중).

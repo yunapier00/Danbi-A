@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import functools
 import logging
+import threading
 import re
 from collections.abc import Callable
 
@@ -33,6 +34,9 @@ IMAGE_TEXT_LIMIT = 4000     # 본문 이미지 하나의 판독 글 상한
 SHORT_BODY = 200            # 이미지를 빼고 본문 글자가 이보다 적으면 이미지가 본문이라고 보고 자동으로 판독한다
 IMAGE_MARK = re.compile(r"\[본문 이미지 \(\d+\)\]")
 VISION_NOTE = "AI가 이미지에서 옮긴 글이라 틀릴 수 있음. 날짜·금액 같은 중요한 정보는 원문 확인을 권할 것"
+SLOW_READ_HINT = ("첨부·이미지 읽기(큰 파일 내려받기·AI 판독)는 서버에서 계속 진행되고 끝나면 저장된다. "
+                  "'일시적 오류'라고 하지 말고, 지금 확인한 내용으로 답한 뒤 1~2분 뒤 같은 질문을 다시 하면 "
+                  "첨부 내용까지 답할 수 있다고 안내하세요.")
 JUDGED = "[판독] "          # 캐시된 첨부 텍스트 중 AI 판독으로 얻은 것의 머리표
 FIELD_LABEL = {"title": "제목", "content": "본문", "writer": "작성자"}
 OP_ALTERNATIVES = {
@@ -55,6 +59,8 @@ class SiteTools:
         self.registry = registry
         self.vision = vision            # 본문 이미지·스캔 PDF 판독 (없으면 이미지는 목록만 보여 준다)
         self.auto_images = auto_images  # 이미지뿐인 본문에서 get_item이 바로 판독하는 이미지 수
+        self._busy: dict[str, threading.Lock] = {}   # 캐시 키별 진행 중 표시 (같은 파일을 두 번 내려받아 판독하지 않게)
+        self._busy_guard = threading.Lock()
         self.adapters = adapters
         self.cache = cache  # 첨부 텍스트 캐시
         self.departments = departments or {}  # 학교 공식 학과 목록 (config/dept_list.yaml)
@@ -226,8 +232,10 @@ class SiteTools:
             Tool(search_spec, self._guard(self.search_site),
                  lambda a: f"{self._where(a)}에서 '{a.get('keyword', '')}' 검색 중"),
             Tool(latest_spec, self._guard(self.latest_items), lambda a: f"{self._where(a)} 최신 글 확인 중"),
-            Tool(item_spec, self._guard(self.get_item), lambda a: f"{self._where(a)} 게시글 읽는 중"),
-            Tool(attachment_spec, self._guard(self.read_attachment), lambda a: f"{self._where(a)} 첨부파일 읽는 중"),
+            Tool(item_spec, self._guard(self.get_item), lambda a: f"{self._where(a)} 게시글 읽는 중",
+                 timeout_hint=SLOW_READ_HINT),
+            Tool(attachment_spec, self._guard(self.read_attachment), lambda a: f"{self._where(a)} 첨부파일 읽는 중",
+                 timeout_hint=SLOW_READ_HINT),
         ]
 
     # --- 진행 상태 문구 -----------------------------------------------------------
@@ -410,14 +418,21 @@ class SiteTools:
     def _image_text(self, adapter: SiteAdapter, url: str) -> str:
         """본문 이미지 판독 글. 이미지 주소 기준으로 오래 캐시한다 (같은 포스터는 한 번만 판독)."""
         key = f"image_text:{url}"
-        if self.cache and (hit := self.cache.get(key)) is not None:
-            return hit
-        if self.vision is None:
-            raise UnsupportedDocument("이 서버에서는 이미지 판독이 꺼져 있습니다")
-        text = self.vision.read(adapter.get_attachment(url)) or "(판독된 글 없음)"
-        if self.cache:
-            self.cache.set(key, text, TTL_ATTACHMENT)
-        return text
+        with self._once(key):
+            if self.cache and (hit := self.cache.get(key)) is not None:
+                return hit
+            if self.vision is None:
+                raise UnsupportedDocument("이 서버에서는 이미지 판독이 꺼져 있습니다")
+            text = self.vision.read(adapter.get_attachment(url)) or "(판독된 글 없음)"
+            if self.cache:
+                self.cache.set(key, text, TTL_ATTACHMENT)
+            return text
+
+    def _once(self, key: str) -> threading.Lock:
+        """같은 캐시 키의 작업은 한 번에 하나만. 뒤에 온 호출은 앞 작업이 끝나길 기다렸다가 캐시를 읽는다.
+        (시간 상한에 걸린 질문의 작업도 스레드에서 끝까지 돌아 캐시를 채우므로, 곧바로 다시 물으면 여기서 기다린다)"""
+        with self._busy_guard:
+            return self._busy.setdefault(key, threading.Lock())
 
     def read_attachment(self, source: str, section: str, item_id: int, attachment_index: int) -> str:
         src, sections, adapter = self._resolve(source, section)
@@ -442,15 +457,16 @@ class SiteTools:
         att = item.attachments[idx]
 
         key = f"attachment_text:{att.url}"
-        text = self.cache.get(key) if self.cache else None
-        if text is None:
-            data = adapter.get_attachment(att.url)
-            try:
-                text = extract_text(att.name, data)
-            except UnsupportedDocument as e:
-                text = JUDGED + self._read_scanned(att.name, data, e, item.url)
-            if self.cache:
-                self.cache.set(key, text, TTL_ATTACHMENT)
+        with self._once(key):
+            text = self.cache.get(key) if self.cache else None
+            if text is None:
+                data = adapter.get_attachment(att.url)
+                try:
+                    text = extract_text(att.name, data)
+                except UnsupportedDocument as e:
+                    text = JUDGED + self._read_scanned(att.name, data, e, item.url)
+                if self.cache:
+                    self.cache.set(key, text, TTL_ATTACHMENT)
         judged = text.startswith(JUDGED)  # 텍스트 추출이 아니라 AI 판독으로 얻은 글
         text = self._clip(text[len(JUDGED):] if judged else text, ATTACHMENT_LIMIT, "첨부 텍스트")
         return (f"[source: {src.id} / section: {sec.id}({sec.title})] 게시글 {item.id} 첨부 ({idx}) {att.name}"

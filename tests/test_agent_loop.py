@@ -109,8 +109,20 @@ async def test_timeout_cuts_slow_tool():
     t0 = time.monotonic()
     events = await collect(Agent(provider, make_tools(hang=hang), timeout_seconds=0.3))
     assert time.monotonic() - t0 < 2
-    assert [e.result for e in events if isinstance(e, ToolEndEvent)][0].is_error
+    result = [e.result for e in events if isinstance(e, ToolEndEvent)][0]
+    assert result.is_error and "다른 소스의 결과로 답변하세요" in result.content
     assert events[-1].text == "부분 답"
+
+
+async def test_timeout_uses_tool_hint():
+    async def hang(q):
+        await asyncio.sleep(5)
+
+    tools = ToolRegistry([Tool(ToolSpec("hang", "느린 도구", SCHEMA), hang, timeout_hint="계속 진행되니 다시 물으라고 안내하세요.")])
+    provider = FakeProvider([Reply(calls=[("hang", {"q": "x"})]), Reply(text="부분 답")])
+    events = await collect(Agent(provider, tools, timeout_seconds=0.3))
+    result = [e.result for e in events if isinstance(e, ToolEndEvent)][0]
+    assert result.content == "시간 상한 안에 결과를 받지 못했습니다. 계속 진행되니 다시 물으라고 안내하세요."
 
 
 async def test_retryable_llm_error_is_retried(monkeypatch):

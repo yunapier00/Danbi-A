@@ -18,6 +18,7 @@ log = logging.getLogger(__name__)
 
 MAX_VISION_BYTES = 15 * 1024 * 1024   # Gemini 인라인 요청 한도(20MB) 안쪽
 MAX_OUTPUT_TOKENS = 4096
+MAX_OUTPUT_TOKENS_PDF = 8192   # 여러 쪽짜리 스캔 문서 (22쪽 매뉴얼이 4096에서 잘렸다)
 
 INSTRUCTION = """이 파일은 대학교 홈페이지 공지에 올라온 이미지(또는 스캔 문서)다. 보이는 글자를 그대로 빠짐없이 옮겨 적어라.
 - 제목, 일시, 장소, 대상, 신청 기간·방법, 문의처, 금액 같은 정보는 하나도 빠뜨리지 않는다.
@@ -53,7 +54,8 @@ class VisionReader:
         if len(data) > MAX_VISION_BYTES:
             raise UnsupportedDocument(f"파일이 너무 커서 판독하지 않았습니다 ({len(data) // 1024 // 1024}MB)")
         try:
-            text, usage = self.provider.read_document(data, mime, INSTRUCTION, max_output_tokens=MAX_OUTPUT_TOKENS)
+            limit = MAX_OUTPUT_TOKENS_PDF if mime == "application/pdf" else MAX_OUTPUT_TOKENS
+            text, usage = self.provider.read_document(data, mime, INSTRUCTION, max_output_tokens=limit)
         except NotImplementedError as e:
             raise UnsupportedDocument("이 서버의 LLM은 이미지 판독을 지원하지 않습니다") from e
         except LLMError as e:
