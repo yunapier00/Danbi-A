@@ -28,6 +28,9 @@ log = logging.getLogger(__name__)
 
 MAX_YEAR_PAGES = 4   # year 필터 시 섹션당 최대 검색 결과 페이지 수 (페이지당 15건)
 MAX_LATEST = 30
+# 학교 사이트 검색은 영문 대소문자를 구분한다 ('trustlock' ≠ 'TrustLock', 2026-10-13 확인).
+# 결과가 없으면 소문자·대문자·단어 첫 글자 대문자로 다시 찾고, 그래도 없으면 최근 글 제목을 대소문자 무시로 비교한다
+CASE_SCAN_PAGES = 2   # 제목 직접 비교에 쓰는 최근 목록 쪽수 (쪽당 15건, 목록은 10분 캐시)
 BODY_LIMIT = 8000
 ATTACHMENT_LIMIT = 12000
 IMAGE_TEXT_LIMIT = 4000     # 본문 이미지 하나의 판독 글 상한
@@ -50,6 +53,10 @@ OP_ALTERNATIVES = {
 KIND_LABEL = {"department": "학과", "campus": "학교 공통", "dku_cms": "학교 사이트", "static_page": "안내 페이지",
               "library": "도서관"}
 MAX_LIST_SOURCES = 15
+
+
+def _has_latin(text: str) -> bool:
+    return bool(re.search(r"[A-Za-z]", text))
 
 
 class SiteTools:
@@ -316,15 +323,26 @@ class SiteTools:
 
         blocks = []
         for sec in sections:
-            first = adapter.search(sec, keyword, field)
+            first, used = self._search_any_case(adapter, sec, keyword, field)
             items = list(first.items)
             page = 1
             # 결과는 작성일 내림차순 → 요청 연도보다 오래된 글이 나올 때까지만 넘긴다
             while year and items and (items[-1].year or 0) >= year and page < min(first.total_pages, MAX_YEAR_PAGES):
                 page += 1
-                items += adapter.search(sec, keyword, field, page).items
+                items += adapter.search(sec, used, field, page).items
 
             head = f"{self._header(src, sec)}\n{FIELD_LABEL[field]} 검색 \"{keyword}\" — 전체 {first.total_count}건"
+            if used != keyword:
+                head += f" (학교 검색이 대소문자를 구분해 \"{used}\"로 다시 찾음)"
+            if not items and field == "title" and _has_latin(keyword) and "list" in adapter.supports:
+                scanned, hits = self._scan_titles(adapter, sec, keyword)
+                if year:
+                    hits = [i for i in hits if i.year == year]
+                if hits:
+                    blocks.append(f"{head}\n학교 검색은 대소문자를 구분해 결과가 없어, 최근 글 {scanned}건의 제목을 "
+                                  f"대소문자 구분 없이 비교해 찾은 글 {len(hits)}건:\n" + "\n".join(self._line(i) for i in hits))
+                    continue
+                head += f" (대소문자 표기를 바꿔도, 최근 글 {scanned}건 제목에도 없음)"
             if not items:
                 blocks.append(f"{head}\n결과 없음")
             elif year:
@@ -333,6 +351,36 @@ class SiteTools:
                 more = f"\n(최근 {len(items)}건만 표시. 더 오래된 글은 year로 좁히거나 검색어를 바꾸세요)" if first.total_count > len(items) else ""
                 blocks.append(head + "\n" + "\n".join(self._line(i) for i in items) + more)
         return "\n\n".join(blocks)
+
+    @staticmethod
+    def _case_variants(keyword: str) -> list[str]:
+        if not _has_latin(keyword):
+            return []
+        words = " ".join(w[:1].upper() + w[1:].lower() for w in keyword.split(" "))
+        return [v for v in dict.fromkeys([keyword.lower(), keyword.upper(), words]) if v != keyword]
+
+    def _search_any_case(self, adapter: SiteAdapter, sec: Section, keyword: str, field: str) -> tuple[ListPage, str]:
+        """(첫 결과 쪽, 실제로 쓴 검색어). 결과가 없으면 영문 대소문자를 바꿔 다시 찾는다."""
+        first = adapter.search(sec, keyword, field)
+        if first.items:
+            return first, keyword
+        for variant in self._case_variants(keyword):
+            found = adapter.search(sec, variant, field)
+            if found.items:
+                return found, variant
+        return first, keyword
+
+    @staticmethod
+    def _scan_titles(adapter: SiteAdapter, sec: Section, keyword: str) -> tuple[int, list[ItemSummary]]:
+        """최근 목록 몇 쪽의 제목을 대소문자·띄어쓰기 무시로 비교한다. (훑어본 글 수, 맞는 글)"""
+        needle = re.sub(r"\s+", "", keyword).casefold()
+        seen: list[ItemSummary] = []
+        for page in range(1, CASE_SCAN_PAGES + 1):
+            lp = adapter.list(sec, page)
+            seen += lp.items
+            if page >= lp.total_pages:
+                break
+        return len(seen), [i for i in seen if needle in re.sub(r"\s+", "", i.title).casefold()]
 
     def _year_filter(self, items: list[ItemSummary], year: int, first: ListPage, pages: int) -> str:
         hits = [i for i in items if i.year == year]

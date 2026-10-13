@@ -323,3 +323,46 @@ def test_calendar_and_menu_filters():
             {"org": "천안", "corner": "도쿄야", "name": "우동", "price": 5000, "sold_out": False}]
     hits = filter_records("menu", menu, org="죽전", keyword="돈카츠")
     assert format_records("menu", hits) == "### 죽전 · 경성카츠\n- 왕돈카츠 8,900원 (품절)"
+
+
+# --- 대소문자 (학교 검색은 영문 대소문자를 구분한다) ---------------------------------------
+
+class CaseSensitiveAdapter(FakeAdapter):
+    """제목에 검색어가 그대로(대소문자 포함) 들어 있어야 찾는 학교 검색 흉내."""
+
+    def search(self, section, keyword, field="title", page=1):
+        self.calls.append(("search", keyword, page))
+        return self._page([i for i in self.items if keyword in i.title], page)
+
+
+def make_case(titles):
+    items = [ItemSummary(n, t, f"2026.10.{n:02d}", f"https://x/{n}") for n, t in enumerate(titles, 1)]
+    tools, _ = make([])
+    src = tools.registry.get("t")
+    adapter = CaseSensitiveAdapter(src, items)
+    return SiteTools(tools.registry, {"t": adapter}), adapter
+
+
+def test_case_variant_found_by_search():
+    tools, adapter = make_case(["AI 경진대회 안내", "학사 공지"])
+    out = tools.search_site("t", "notice", "ai 경진대회")
+    assert "(학교 검색이 대소문자를 구분해 \"AI 경진대회\"로 다시 찾음)" in out and "AI 경진대회 안내" in out
+    assert [c[1] for c in adapter.calls] == ["ai 경진대회", "AI 경진대회"]   # 소문자는 원래와 같아 건너뛰고 대문자에서 찾음
+
+
+def test_mixed_case_name_found_by_title_scan():
+    tools, adapter = make_case(["온라인 시험 TrustLock 운영 안내", "장학 공지", "수강 신청"])
+    out = tools.search_site("t", "notice", "trustlock")
+    assert "최근 글 3건의 제목을 대소문자 구분 없이 비교해 찾은 글 1건" in out and "TrustLock 운영 안내" in out
+    searched = [c[1] for c in adapter.calls if c[0] == "search"]
+    assert searched == ["trustlock", "TRUSTLOCK", "Trustlock"]
+    assert "TrustLock 운영 안내" in tools.search_site("t", "notice", "trust lock")   # 띄어쓰기도 무시한다
+
+
+def test_no_case_retry_for_korean_or_found_results():
+    tools, adapter = make_case(["장학 공지"])
+    out = tools.search_site("t", "notice", "등록금")
+    assert "결과 없음" in out and [c for c in adapter.calls if c[0] == "search"] == [("search", "등록금", 1)]
+    assert not any(c[0] == "list" for c in adapter.calls)             # 한글은 대소문자가 없어 다시 찾지 않는다
+    out = tools.search_site("t", "notice", "zzz")
+    assert "(대소문자 표기를 바꿔도, 최근 글 1건 제목에도 없음)" in out and "결과 없음" in out
