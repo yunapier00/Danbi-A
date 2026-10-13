@@ -117,3 +117,7 @@ agent:
 
 personal:                     # 사용자 개인 자료 연동 — 저장 주소 암호화 키 DANBI_SECRET_KEY(환경 변수)가 없으면 꺼짐
   eclass_cache_minutes: 30    # eclass 캘린더 피드를 사용자별로 메모리에 두는 시간 (학교 서버 요청을 줄인다)
+
+vision:                       # 공지 본문 이미지(포스터)·스캔 PDF 판독 — llm 설정의 모델로 읽고 이미지 주소 기준 1년 캐시
+  enabled: true
+  auto_images: 2              # 본문이 이미지뿐인 글은 get_item이 앞쪽 2장을 바로 판독 (나머지는 read_attachment)

@@ -112,3 +112,11 @@ class LLMProvider(ABC):
         한 응답에 도구 호출이 여러 개면 ToolCallEvent가 여러 번 오고 Done.message.tool_calls에 모두 담긴다.
         오류는 LLMError(retryable=...)로 던진다.
         """
+
+    def read_document(self, data: bytes, mime_type: str, instruction: str, *,
+                      max_output_tokens: int = 4096) -> tuple[str, Usage]:
+        """이미지·PDF 한 개를 읽어 instruction대로 글로 옮긴다 (동기, 도구 스레드에서 부른다).
+
+        에이전트 대화와 별개인 한 번짜리 호출이다. 지원하지 않는 공급자는 NotImplementedError.
+        """
+        raise NotImplementedError(f"{self.name}은(는) 이미지·문서 읽기를 지원하지 않습니다")

@@ -147,6 +147,13 @@ class KakaoSettings:
 
 
 @dataclass
+class VisionSettings:
+    """공지 본문 이미지·스캔 PDF 판독 (LLM 비전). 판독 결과는 이미지 주소 기준으로 1년 캐시한다."""
+    enabled: bool = True
+    auto_images: int = 2      # 본문이 이미지뿐인 글에서 get_item이 바로 판독하는 이미지 수 (나머지는 read_attachment)
+
+
+@dataclass
 class PersonalSettings:
     """사용자 개인 자료 연동 (eclass 캘린더 피드). 저장하는 주소를 암호화할 키 DANBI_SECRET_KEY가 없으면 꺼진다."""
     eclass_cache_minutes: float = 30   # 받아 온 일정을 사용자별로 메모리에 두는 시간
@@ -181,6 +188,7 @@ class Settings:
     auth: AuthSettings = field(default_factory=AuthSettings)
     agent: AgentSettings = field(default_factory=AgentSettings)
     personal: PersonalSettings = field(default_factory=PersonalSettings)
+    vision: VisionSettings = field(default_factory=VisionSettings)
     enable_docs: bool = False   # /api/docs (DANBI_ENABLE_DOCS=1)
 
 
@@ -222,6 +230,7 @@ def load_settings(path: str | Path | None = None) -> Settings:
         auth=AuthSettings(**(raw.get("auth") or {})),
         agent=AgentSettings(**(raw.get("agent") or {})),
         personal=PersonalSettings(**(raw.get("personal") or {})),
+        vision=VisionSettings(**(raw.get("vision") or {})),
     )
     _apply_env(settings)
     return settings

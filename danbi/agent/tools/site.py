@@ -14,6 +14,7 @@ from collections.abc import Callable
 from ...crawler.adapters.base import ItemSummary, ListPage, NotSupported, SiteAdapter
 from ...crawler.cache import TTL_ATTACHMENT, Cache
 from ...crawler.extract.documents import UnsupportedDocument, extract_text
+from ...crawler.extract.vision import VisionReader, sniff_mime
 from ...crawler.http import FetchError
 from ...llm.base import ToolSpec
 from ...sources.dept_list import Department
@@ -28,6 +29,11 @@ MAX_YEAR_PAGES = 4   # year 필터 시 섹션당 최대 검색 결과 페이지 
 MAX_LATEST = 30
 BODY_LIMIT = 8000
 ATTACHMENT_LIMIT = 12000
+IMAGE_TEXT_LIMIT = 4000     # 본문 이미지 하나의 판독 글 상한
+SHORT_BODY = 200            # 이미지를 빼고 본문 글자가 이보다 적으면 이미지가 본문이라고 보고 자동으로 판독한다
+IMAGE_MARK = re.compile(r"\[본문 이미지 \(\d+\)\]")
+VISION_NOTE = "AI가 이미지에서 옮긴 글이라 틀릴 수 있음. 날짜·금액 같은 중요한 정보는 원문 확인을 권할 것"
+JUDGED = "[판독] "          # 캐시된 첨부 텍스트 중 AI 판독으로 얻은 것의 머리표
 FIELD_LABEL = {"title": "제목", "content": "본문", "writer": "작성자"}
 OP_ALTERNATIVES = {
     "search": "latest_items나 get_page를 쓰세요",
@@ -44,8 +50,11 @@ MAX_LIST_SOURCES = 15
 
 class SiteTools:
     def __init__(self, registry: SourceRegistry, adapters: dict[str, SiteAdapter], inline_source_limit: int = 20,
-                 cache: Cache | None = None, departments: dict[str, Department] | None = None):
+                 cache: Cache | None = None, departments: dict[str, Department] | None = None,
+                 vision: VisionReader | None = None, auto_images: int = 2):
         self.registry = registry
+        self.vision = vision            # 본문 이미지·스캔 PDF 판독 (없으면 이미지는 목록만 보여 준다)
+        self.auto_images = auto_images  # 이미지뿐인 본문에서 get_item이 바로 판독하는 이미지 수
         self.adapters = adapters
         self.cache = cache  # 첨부 텍스트 캐시
         self.departments = departments or {}  # 학교 공식 학과 목록 (config/dept_list.yaml)
@@ -195,7 +204,8 @@ class SiteTools:
         )
         item_spec = ToolSpec(
             name="get_item",
-            description="웹 소스 게시글의 상세(제목, 작성일·수정일, 본문, 첨부 목록, URL)를 가져온다. item_id는 search_site·latest_items 결과의 ID.",
+            description=("웹 소스 게시글의 상세(제목, 작성일·수정일, 본문, 첨부 목록, URL)를 가져온다. item_id는 search_site·latest_items 결과의 ID. "
+                         "본문이 이미지(포스터)뿐이면 이미지 글자를 판독해 함께 돌려준다."),
             parameters=self._params({
                 "item_id": {"type": "integer", "description": "게시글 ID"},
             }, ["item_id"]),
@@ -203,13 +213,13 @@ class SiteTools:
         attachment_spec = ToolSpec(
             name="read_attachment",
             description=(
-                "게시글 첨부파일(PDF, HWP, HWPX)의 텍스트를 읽는다. 표는 마크다운 표로 돌려준다. "
-                "본문이 비어 있거나 본문만으로 답이 부족하고 첨부에 내용이 있을 때 쓴다. "
+                "게시글 첨부파일(PDF, HWP, HWPX, 이미지)이나 본문 이미지의 글을 읽는다. 표는 마크다운 표로 돌려준다. "
+                "본문이 비어 있거나 본문만으로 답이 부족하고 첨부·이미지에 내용이 있을 때 쓴다. "
                 "attachment_index는 get_item 결과의 첨부 번호. 한 번에 첨부 1개만 읽는다."
             ),
             parameters=self._params({
                 "item_id": {"type": "integer", "description": "게시글 ID"},
-                "attachment_index": {"type": "integer", "description": "첨부 번호 (get_item 결과의 (0), (1) …)"},
+                "attachment_index": {"type": "integer", "description": "첨부·본문 이미지 번호 (get_item 결과의 (0), (1) …)"},
             }, ["item_id", "attachment_index"]),
         )
         return [
@@ -368,14 +378,46 @@ class SiteTools:
         ]
         if item.attachments:
             lines.append("첨부: " + ", ".join(f"({n}) {a.name}" for n, a in enumerate(item.attachments)))
+        first_image = len(item.attachments)
+        if item.images:
+            numbers = ", ".join(f"({first_image + k})" for k in range(len(item.images)))
+            lines.append(f"본문 이미지: {numbers} — read_attachment로 이미지 글을 읽을 수 있음")
         body = item.body_md.strip()
         if len(body) > BODY_LIMIT:
             body = body[:BODY_LIMIT] + f"\n…(본문 {len(item.body_md):,}자 중 앞부분만 표시)"
+        if item.images and self.vision is not None and len(IMAGE_MARK.sub("", body).strip()) < SHORT_BODY:
+            # 포스터 한 장짜리 공지: 본문 = 이미지. 앞쪽 몇 장은 바로 판독해 붙인다 (나머지는 read_attachment)
+            for k, url in enumerate(item.images[: self.auto_images]):
+                body += f"\n\n[본문 이미지 ({first_image + k}) 판독 — {VISION_NOTE}]\n"
+                try:
+                    body += self._clip(self._image_text(adapter, url), IMAGE_TEXT_LIMIT, "판독 글")
+                except (UnsupportedDocument, FetchError, ValueError) as e:
+                    body += f"(판독하지 못함: {e})"
+            rest = len(item.images) - self.auto_images
+            if rest > 0:
+                body += f"\n\n…(본문 이미지 {rest}개는 아직 읽지 않음. 필요하면 read_attachment로 읽으세요)"
+            body = body.strip()
         if not body:
             body = "(본문 없음)"
             if item.attachments:
                 body += " 내용은 첨부파일에 있습니다. read_attachment로 첨부를 읽으세요."
         return "\n".join(lines) + "\n---\n" + body
+
+    @staticmethod
+    def _clip(text: str, limit: int, label: str) -> str:
+        return text if len(text) <= limit else text[:limit] + f"\n…({label} {len(text):,}자 중 앞부분만 표시)"
+
+    def _image_text(self, adapter: SiteAdapter, url: str) -> str:
+        """본문 이미지 판독 글. 이미지 주소 기준으로 오래 캐시한다 (같은 포스터는 한 번만 판독)."""
+        key = f"image_text:{url}"
+        if self.cache and (hit := self.cache.get(key)) is not None:
+            return hit
+        if self.vision is None:
+            raise UnsupportedDocument("이 서버에서는 이미지 판독이 꺼져 있습니다")
+        text = self.vision.read(adapter.get_attachment(url)) or "(판독된 글 없음)"
+        if self.cache:
+            self.cache.set(key, text, TTL_ATTACHMENT)
+        return text
 
     def read_attachment(self, source: str, section: str, item_id: int, attachment_index: int) -> str:
         src, sections, adapter = self._resolve(source, section)
@@ -384,25 +426,48 @@ class SiteTools:
         sec = sections[0]
         item = adapter.get_item(sec, int(item_id))
         idx = int(attachment_index)
-        if not 0 <= idx < len(item.attachments):
-            listed = ", ".join(f"({n}) {a.name}" for n, a in enumerate(item.attachments)) or "없음"
+        n_files = len(item.attachments)
+        if n_files <= idx < n_files + len(item.images):
+            try:
+                text = self._image_text(adapter, item.images[idx - n_files])
+            except UnsupportedDocument as e:
+                raise ToolError(f"본문 이미지 ({idx})를 읽을 수 없습니다: {e}. 원문 URL을 안내하세요: {item.url}") from e
+            return (f"[source: {src.id} / section: {sec.id}({sec.title})] 게시글 {item.id} 본문 이미지 ({idx}) "
+                    f"판독 — {VISION_NOTE}\n게시글 제목: {item.title} | 작성일: {item.posted_at or '미상'}\n"
+                    f"게시글 URL: {item.url}\n---\n" + self._clip(text, IMAGE_TEXT_LIMIT, "판독 글"))
+        if not 0 <= idx < n_files:
+            listed = ", ".join([f"({n}) {a.name}" for n, a in enumerate(item.attachments)]
+                               + [f"({n_files + k}) 본문 이미지" for k in range(len(item.images))]) or "없음"
             raise ToolError(f"게시글 {item.id}에 첨부 ({idx})이(가) 없습니다. 첨부 목록: {listed}")
         att = item.attachments[idx]
 
         key = f"attachment_text:{att.url}"
         text = self.cache.get(key) if self.cache else None
         if text is None:
+            data = adapter.get_attachment(att.url)
             try:
-                text = extract_text(att.name, adapter.get_attachment(att.url))
+                text = extract_text(att.name, data)
             except UnsupportedDocument as e:
-                raise ToolError(f"첨부 '{att.name}'을(를) 읽을 수 없습니다: {e}. 원문 URL을 안내하세요: {item.url}") from e
+                text = JUDGED + self._read_scanned(att.name, data, e, item.url)
             if self.cache:
                 self.cache.set(key, text, TTL_ATTACHMENT)
-        if len(text) > ATTACHMENT_LIMIT:
-            text = text[:ATTACHMENT_LIMIT] + f"\n…(첨부 텍스트 {len(text):,}자 중 앞부분만 표시)"
-        return (f"[source: {src.id} / section: {sec.id}({sec.title})] 게시글 {item.id} 첨부 ({idx}) {att.name}\n"
+        judged = text.startswith(JUDGED)  # 텍스트 추출이 아니라 AI 판독으로 얻은 글
+        text = self._clip(text[len(JUDGED):] if judged else text, ATTACHMENT_LIMIT, "첨부 텍스트")
+        return (f"[source: {src.id} / section: {sec.id}({sec.title})] 게시글 {item.id} 첨부 ({idx}) {att.name}"
+                + (f" (스캔 문서·이미지 판독 — {VISION_NOTE})" if judged else "") + "\n"
                 f"게시글 제목: {item.title} | 작성일: {item.posted_at or '미상'}\n게시글 URL: {item.url}\n---\n"
                 + (text or "(추출된 텍스트 없음)"))
+
+    def _read_scanned(self, name: str, data: bytes, error: UnsupportedDocument, item_url: str) -> str:
+        """텍스트를 뽑을 수 없는 첨부 중 스캔 PDF·이미지 파일만 판독기로 읽는다 (암호·배포용 문서는 그대로 실패)."""
+        mime = sniff_mime(data) or ""
+        scanned = mime == "application/pdf" and "텍스트가 없는" in str(error)
+        if self.vision is None or not (scanned or mime.startswith("image/")):
+            raise ToolError(f"첨부 '{name}'을(를) 읽을 수 없습니다: {error}. 원문 URL을 안내하세요: {item_url}") from error
+        try:
+            return self.vision.read(data) or "(판독된 글 없음)"
+        except UnsupportedDocument as e:
+            raise ToolError(f"첨부 '{name}'을(를) 읽을 수 없습니다: {e}. 원문 URL을 안내하세요: {item_url}") from e
 
     def query_data(self, source: str, dataset: str, name: str | None = None, keyword: str | None = None,
                    grade: int | None = None, semester: int | None = None, category: str | None = None,

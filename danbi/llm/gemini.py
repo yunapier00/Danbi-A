@@ -32,8 +32,9 @@ _RETRYABLE_FINISH = {"MALFORMED_FUNCTION_CALL", "UNEXPECTED_TOOL_CALL"}
 class GeminiProvider(LLMProvider):
     name = "gemini"
 
-    def __init__(self, model: str, client: genai.Client | None = None):
+    def __init__(self, model: str, client: genai.Client | None = None, thinking_level: str | None = None):
         self.model = model
+        self.thinking_level = thinking_level  # read_document용 (대화 호출은 LLMOptions.extra를 따른다)
         self.client = client or genai.Client()  # GOOGLE_API_KEY 환경 변수 사용
         self._ids = itertools.count(1)
 
@@ -168,3 +169,30 @@ class GeminiProvider(LLMProvider):
             provider_data={self.name: types.Content(role="model", parts=parts)} if parts else {},
         )
         yield Done(stop_reason=stop, usage=usage, message=message)
+
+    # --- 이미지·문서 읽기 (한 번짜리 호출) ---------------------------------------
+
+    def read_document(self, data: bytes, mime_type: str, instruction: str, *,
+                      max_output_tokens: int = 4096) -> tuple[str, Usage]:
+        cfg = types.GenerateContentConfig(
+            temperature=0.0, max_output_tokens=max_output_tokens,
+            automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True))
+        if self.thinking_level:
+            cfg.thinking_config = types.ThinkingConfig(thinking_level=str(self.thinking_level).upper())
+        try:
+            r = self.client.models.generate_content(
+                model=self.model, contents=[types.Part.from_bytes(data=data, mime_type=mime_type), instruction], config=cfg)
+        except errors.APIError as e:
+            code = getattr(e, "code", None) or 0
+            raise LLMError(f"Gemini API 오류 ({code}): {e.message or e}", retryable=code == 429 or code >= 500) from e
+        except (OSError, TimeoutError) as e:
+            raise LLMError(f"Gemini 연결 오류: {e}", retryable=True) from e
+        u = r.usage_metadata
+        usage = Usage(input_tokens=(u.prompt_token_count or 0) if u else 0,
+                      output_tokens=((u.candidates_token_count or 0) + (u.thoughts_token_count or 0)) if u else 0)
+        cand = r.candidates[0] if r.candidates else None
+        finish = getattr(cand.finish_reason, "value", str(cand.finish_reason)) if cand and cand.finish_reason else None
+        if (r.prompt_feedback and r.prompt_feedback.block_reason) or finish in _REFUSED:
+            raise LLMError(f"Gemini가 이 파일 읽기를 거부했습니다 ({finish or r.prompt_feedback.block_reason})")
+        parts = cand.content.parts if cand and cand.content and cand.content.parts else []
+        return "".join(p.text for p in parts if p.text and not p.thought), usage

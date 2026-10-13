@@ -75,7 +75,14 @@ def build_site_tools(settings: Settings):
             adapters[src.id] = create_adapter(src, http, cache, snapshots)
         except ValueError as e:
             log.warning("%s", e)
-    return SiteTools(sources, adapters, settings.agent.inline_source_limit, cache=cache, departments=departments)
+    vision = None
+    if settings.vision.enabled:
+        from .crawler.extract.vision import VisionReader
+        from .llm import create_provider
+
+        vision = VisionReader(create_provider(settings.llm))
+    return SiteTools(sources, adapters, settings.agent.inline_source_limit, cache=cache, departments=departments,
+                     vision=vision, auto_images=settings.vision.auto_images)
 
 
 def build_agent(settings: Settings, *, with_tools: bool = True, eclass=None) -> Agent:

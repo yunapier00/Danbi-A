@@ -51,6 +51,8 @@ class Item:
     author: str | None = None
     body_md: str = ""
     attachments: list[Attachment] = field(default_factory=list)
+    # 본문 이미지 주소. 번호는 첨부 뒤에 이어 붙인다 (첨부 2개면 이미지는 (2), (3) …). 본문에는 [본문 이미지 (n)] 표시
+    images: list[str] = field(default_factory=list)
 
 
 @dataclass

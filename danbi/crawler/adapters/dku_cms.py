@@ -114,6 +114,7 @@ def parse_item(html: str, url: str, item_id: int) -> Item:
         modified = m.group(1)
         posted = posted[: m.start()].strip()
     body = table.select_one("td.r_cont .content-wrap") or table.select_one("td.r_cont")
+    images = _take_images(body, url, len(attachments)) if body else []
     return Item(
         id=item_id,
         title=clean_text(title_th.get_text(" ")) if title_th else "",
@@ -123,7 +124,27 @@ def parse_item(html: str, url: str, item_id: int) -> Item:
         author=meta.get("작성자"),
         body_md=html_to_md(body) if body else "",
         attachments=attachments,
+        images=images,
     )
+
+
+MIN_IMAGE_SIDE = 80  # 이보다 작다고 표시된 이미지는 아이콘·장식으로 보고 건너뛴다
+
+
+def _take_images(body, page_url: str, offset: int) -> list[str]:
+    """본문 이미지를 [본문 이미지 (n)] 표시로 바꾸고 주소 목록을 돌려준다. data: URI·작은 아이콘은 지운다."""
+    urls: list[str] = []
+    for img in body.select("img"):
+        src = (img.get("src") or "").strip()
+        sizes = [int(v) for v in (img.get("width"), img.get("height")) if v and str(v).isdigit()]
+        if not src or src.startswith("data:") or (sizes and min(sizes) < MIN_IMAGE_SIDE):
+            img.decompose()
+            continue
+        full = urljoin(page_url, src)
+        if full not in urls:
+            urls.append(full)
+        img.replace_with(f" [본문 이미지 ({offset + urls.index(full)})] ")
+    return urls
 
 
 def parse_page(html: str, url: str) -> PageDoc:
