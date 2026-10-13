@@ -209,7 +209,8 @@ class Auth:
         resp.delete_cookie(SESSION_COOKIE, path="/", secure=True, httponly=True, samesite="lax")
 
 
-def mount_auth(app: FastAPI, auth: Auth, *, allow_anonymous: bool, remaining_of: Callable[[dict | None, Request], int | None]):
+def mount_auth(app: FastAPI, auth: Auth, *, allow_anonymous: bool, remaining_of: Callable[[dict | None, Request], int | None],
+               credits_of: Callable[[dict | None], int] | None = None):
     def require_config():
         if not auth.enabled:
             raise HTTPException(503, "로그인이 설정되지 않았습니다 (GOOGLE_CLIENT_ID·GOOGLE_CLIENT_SECRET).")
@@ -239,4 +240,5 @@ def mount_auth(app: FastAPI, auth: Auth, *, allow_anonymous: bool, remaining_of:
             "login_enabled": auth.enabled, "anonymous_allowed": allow_anonymous,
             "domain": auth.settings.allowed_domain,
             "remaining": remaining_of(user, request) if (user or allow_anonymous) else None,
+            "credits": credits_of(user) if (user and credits_of) else 0,   # remaining 중 추가 이용권
         }

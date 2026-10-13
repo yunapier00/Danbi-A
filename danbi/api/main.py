@@ -216,8 +216,24 @@ class Guard:
         self.minute = minute_limiter or RateLimiter(limits.per_ip_per_minute, 60)
         self.slots = asyncio.Semaphore(max(1, limits.max_concurrent))
 
-    def check(self, key: str, *, client_ip: str | None = None, user_key: str | None = None) -> tuple[str | None, int | None]:
-        """(막는 이유, 이번 질문 뒤 남는 횟수). 막지 않으면 이유는 None. 추적 DB가 없으면 하루 제한은 건너뛴다."""
+    def quota(self, user: dict | None) -> tuple[int, list[dict]]:
+        """(오늘 하루 한도, 남은 credits 이용권 목록). 이용권은 웹 로그인 사용자(이메일)에게만 준다."""
+        base = self.limits.per_user_per_day
+        if user is None or self.recorder is None or not user.get("email"):
+            return base, []
+        grants = self.recorder.store.active_grants(user["email"])
+        daily = max([base] + [g["amount"] for g in grants if g["kind"] == "daily"])
+        return daily, [g for g in grants if g["kind"] == "credits" and g["left"] > 0]
+
+    def credits_left(self, user: dict | None) -> int:
+        return sum(g["left"] for g in self.quota(user)[1])
+
+    def check(self, key: str, *, client_ip: str | None = None, user_key: str | None = None,
+              user: dict | None = None, run_id: str | None = None) -> tuple[str | None, int | None]:
+        """(막는 이유, 이번 질문 뒤 남는 횟수). 막지 않으면 이유는 None. 추적 DB가 없으면 하루 제한은 건너뛴다.
+
+        하루 한도를 다 쓴 로그인 사용자에게 credits 이용권이 있으면 run_id로 1회 차감하고 통과시킨다
+        (먼저 끝나는 이용권부터). 남는 횟수 = 오늘 한도의 나머지 + 남은 이용권."""
         if not self.minute.allow(key):
             return self.MINUTE_MSG, None
         if self.recorder is None:
@@ -228,16 +244,23 @@ class Guard:
             log.warning("하루 사용량 상한 도달: %s", used)
             return self.DAILY_TOTAL_MSG, None
         mine = store.count_user_since(since, client_ip=client_ip, user_key=user_key)
-        if mine >= self.limits.per_user_per_day:
-            return self.DAILY_USER_MSG.format(n=self.limits.per_user_per_day), 0
-        return None, self.limits.per_user_per_day - mine - 1
+        daily, credits = self.quota(user)
+        extra = sum(g["left"] for g in credits)
+        if mine < daily:
+            return None, daily - mine - 1 + extra
+        if credits and run_id:
+            store.consume_credit(credits[0]["id"], user_key or key, run_id)
+            return None, extra - 1
+        return self.DAILY_USER_MSG.format(n=daily), 0
 
-    def remaining(self, *, client_ip: str | None = None, user_key: str | None = None) -> int | None:
-        """오늘 남은 질문 수 (분당 제한을 쓰지 않는 조회용)."""
+    def remaining(self, *, client_ip: str | None = None, user_key: str | None = None,
+                  user: dict | None = None) -> int | None:
+        """지금 남은 질문 수 = 오늘 한도의 나머지 + 남은 이용권 (분당 제한을 쓰지 않는 조회용)."""
         if self.recorder is None:
             return None
         used = self.recorder.store.count_user_since(kst_midnight(), client_ip=client_ip, user_key=user_key)
-        return max(0, self.limits.per_user_per_day - used)
+        daily, credits = self.quota(user)
+        return max(0, daily - used) + sum(g["left"] for g in credits)
 
 
 SECURITY_HEADERS = {
@@ -313,8 +336,9 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
     if authn is not None:
         def remaining_of(user: dict | None, request: Request) -> int | None:
             _, _, ip, ukey = identity(request)
-            return guard.remaining(client_ip=ip, user_key=ukey)
-        mount_auth(app, authn, allow_anonymous=allow_anonymous, remaining_of=remaining_of)
+            return guard.remaining(client_ip=ip, user_key=ukey, user=user)
+        mount_auth(app, authn, allow_anonymous=allow_anonymous, remaining_of=remaining_of,
+                   credits_of=guard.credits_left)
     if recorder is not None:
         mount_admin(app, recorder.store, admin_token, client_of=ip_of,
                     fail_limiter=RateLimiter(limits.admin_auth_failures, 600),
@@ -440,9 +464,11 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
         user, client, ip, ukey = identity(request)
         if user is None and not allow_anonymous:
             raise HTTPException(401, "로그인이 필요합니다.")
-        blocked, remaining = guard.check(ukey or client, client_ip=ip, user_key=ukey)
+        run_id = new_run_id()
+        blocked, remaining = guard.check(ukey or client, client_ip=ip, user_key=ukey, user=user, run_id=run_id)
         if blocked:
             raise HTTPException(429, blocked)
+        credits = guard.credits_left(user) if user is not None else 0
         owner = ukey or client
         sid, session = sessions.get(req.session_id)
         if req.session_id and sid != req.session_id and user is not None and recorder is not None:
@@ -461,26 +487,29 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
             raise HTTPException(409, "이전 질문에 아직 답하는 중입니다.")
         session.busy_since = time.monotonic()  # 응답 생성 전에 표시해야 동시 요청을 막을 수 있다
         me = CurrentUser(int(user["id"]), ukey) if user is not None else None
-        return StreamingResponse(_stream(sid, session, req.message.strip(), ip, ukey, remaining, me),
+        return StreamingResponse(_stream(sid, session, req.message.strip(), ip, ukey, remaining, me, run_id, credits),
                                  media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
     async def _stream(sid: str, session: Session, message: str, ip: str | None, ukey: str | None,
-                      remaining: int | None = None, me: CurrentUser | None = None) -> AsyncIterator[str]:
+                      remaining: int | None = None, me: CurrentUser | None = None, run_id: str | None = None,
+                      credits: int = 0) -> AsyncIterator[str]:
+        run_id = run_id or new_run_id()
         # 동시 처리 상한: 슬롯이 없으면 기다리지 않고 바로 알린다 (응답이 시작된 뒤에 잡아야 슬롯이 새지 않는다)
         if slots.locked():
             session.busy_since = None
+            if recorder is not None:  # 시작도 못 한 질문에 쓴 이용권은 되돌린다
+                recorder.store.refund_credit(run_id)
             yield _sse("error", {"message": "지금 질문이 많아요. 잠시 후 다시 시도해 주세요."})
             return
         async with slots:
-            async for chunk in _answer(sid, session, message, ip, ukey, remaining, me):
+            async for chunk in _answer(sid, session, message, ip, ukey, remaining, me, run_id, credits):
                 yield chunk
 
     async def _answer(sid: str, session: Session, message: str, ip: str | None, ukey: str | None,
-                      remaining: int | None, me: CurrentUser | None = None) -> AsyncIterator[str]:
+                      remaining: int | None, me: CurrentUser | None, run_id: str, credits: int) -> AsyncIterator[str]:
         # 개인 자료 도구는 이 값으로만 사용자를 안다. 이 응답을 만드는 태스크에서 설정하면 도구 실행에도 이어진다
         CURRENT_USER.set(me)
-        run_id = new_run_id()
         asked_connect = False
         links: dict[str, dict] = {}
         final: FinalEvent | None = None
@@ -516,7 +545,7 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
                 yield _sse("sources", {"items": list(links.values())})
             yield _sse("done", {"run_id": run_id if recorder is not None else None, "stop_reason": final.stop_reason,
                                 "tool_calls": final.tool_calls_used, "elapsed": round(final.elapsed, 2),
-                                "usage": asdict(final.usage), "remaining": remaining})
+                                "usage": asdict(final.usage), "remaining": remaining, "credits": credits})
         except Exception as e:  # 스트림 도중 오류는 HTTP 상태로 알릴 수 없으므로 이벤트로 보낸다
             log.exception("채팅 처리 실패")
             yield _sse("error", {"message": f"오류가 발생했습니다: {type(e).__name__}"})

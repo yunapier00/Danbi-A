@@ -19,7 +19,8 @@ import threading
 import time
 from pathlib import Path
 
-SCHEMA_VERSION = 5  # 2: runs.client_ip, 3: runs.user_key, 4: users·auth_sessions (Google 로그인), 5: user_integrations
+SCHEMA_VERSION = 6  # 2: runs.client_ip, 3: runs.user_key, 4: users·auth_sessions (Google 로그인), 5: user_integrations,
+                    # 6: user_grants·credit_ledger (질문 이용권)
 MAX_TEXT = 50_000  # 도구 결과·답변 저장 상한 (감사용으로 거의 전부 남긴다)
 
 SCHEMA = """
@@ -155,6 +156,31 @@ CREATE TABLE IF NOT EXISTS user_integrations (     -- 사용자 개인 자료 �
     last_error    TEXT,
     PRIMARY KEY (user_id, kind)
 );
+CREATE TABLE IF NOT EXISTS user_grants (           -- 질문 이용권: 운영자 지정(지금) 또는 결제(나중)
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    email         TEXT NOT NULL,                    -- 받는 사람 (소문자). 로그인 전에도 줄 수 있어 이메일로 찾는다
+    kind          TEXT NOT NULL,                    -- daily: 기간 동안 하루 한도를 amount로 | credits: 하루 한도를 다 쓴 뒤 쓰는 amount회
+    amount        INTEGER NOT NULL,
+    starts_at     REAL NOT NULL,
+    expires_at    REAL,                             -- NULL = 무기한
+    source        TEXT NOT NULL DEFAULT 'admin',    -- admin | payment
+    ref           TEXT UNIQUE,                      -- 결제 번호 등 (같은 결제로 두 번 지급하지 않게)
+    note          TEXT,
+    created_by    TEXT NOT NULL,
+    created_at    REAL NOT NULL,
+    revoked_at    REAL,
+    revoked_by    TEXT
+);
+CREATE TABLE IF NOT EXISTS credit_ledger (         -- credits 이용권 차감 기록 (추가만 함). 오류로 끝난 실행의 차감은 세지 않는다
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    grant_id      INTEGER NOT NULL REFERENCES user_grants(id),
+    user_key      TEXT NOT NULL,
+    run_id        TEXT NOT NULL,
+    at            REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_grants_email ON user_grants(email);
+CREATE INDEX IF NOT EXISTS idx_ledger_grant ON credit_ledger(grant_id);
+CREATE INDEX IF NOT EXISTS idx_ledger_run ON credit_ledger(run_id);
 CREATE INDEX IF NOT EXISTS idx_runs_started ON runs(started_at);
 CREATE INDEX IF NOT EXISTS idx_auth_user ON auth_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_runs_conv ON runs(conversation_id);
@@ -517,6 +543,71 @@ class TraceStore:
             self._db.commit()
 
     # --- 사용자 대화 기록 (웹 채팅 사이드바) ------------------------------------------------
+
+    # --- 질문 이용권 ------------------------------------------------------------------
+
+    def add_grant(self, *, email: str, kind: str, amount: int, starts_at: float, expires_at: float | None,
+                  created_by: str, source: str = "admin", ref: str | None = None, note: str | None = None) -> int:
+        if kind not in ("daily", "credits") or amount < 1:
+            raise ValueError("kind는 daily|credits, amount는 1 이상이어야 합니다")
+        cur = self._exec(
+            "INSERT INTO user_grants (email, kind, amount, starts_at, expires_at, source, ref, note, created_by, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (email.strip().lower(), kind, int(amount), starts_at, expires_at, source, ref, note, created_by, time.time()))
+        return int(cur.lastrowid)
+
+    def revoke_grant(self, grant_id: int, revoked_by: str) -> bool:
+        cur = self._exec("UPDATE user_grants SET revoked_at = ?, revoked_by = ? WHERE id = ? AND revoked_at IS NULL",
+                         (time.time(), revoked_by, grant_id))
+        return cur.rowcount > 0
+
+    def active_grants(self, email: str, now: float | None = None) -> list[dict]:
+        """지금 유효한 이용권. credits는 남은 횟수(left)를 붙이고, 먼저 끝나는 것부터."""
+        now = now or time.time()
+        rows = self._all(
+            "SELECT * FROM user_grants WHERE email = ? AND revoked_at IS NULL AND starts_at <= ? "
+            "AND (expires_at IS NULL OR expires_at > ?) ORDER BY COALESCE(expires_at, 9e18), id",
+            (email.strip().lower(), now, now))
+        used = self.credit_used([g["id"] for g in rows if g["kind"] == "credits"])
+        for g in rows:
+            if g["kind"] == "credits":
+                g["left"] = max(0, g["amount"] - used.get(g["id"], 0))
+        return rows
+
+    def credit_used(self, grant_ids: list[int]) -> dict[int, int]:
+        """이용권별 사용 횟수. 오류로 끝난 실행은 빼고, 아직 기록이 없는(진행 중) 실행은 센다."""
+        if not grant_ids:
+            return {}
+        marks = ", ".join("?" * len(grant_ids))
+        rows = self._all(
+            f"SELECT l.grant_id AS gid, COUNT(*) AS n FROM credit_ledger l LEFT JOIN runs r ON r.id = l.run_id "
+            f"WHERE l.grant_id IN ({marks}) AND (r.status IS NULL OR r.status != 'error') GROUP BY l.grant_id",
+            tuple(grant_ids))
+        return {r["gid"]: r["n"] for r in rows}
+
+    def consume_credit(self, grant_id: int, user_key: str, run_id: str) -> None:
+        self._exec("INSERT INTO credit_ledger (grant_id, user_key, run_id, at) VALUES (?, ?, ?, ?)",
+                   (grant_id, user_key, run_id, time.time()))
+
+    def refund_credit(self, run_id: str) -> None:
+        """실행이 시작되지도 못한 경우(동시 처리 슬롯 없음)만 차감을 되돌린다. 오류로 끝난 실행은 credit_used가 뺀다."""
+        self._exec("DELETE FROM credit_ledger WHERE run_id = ?", (run_id,))
+
+    def list_grants(self, email: str | None = None, include_inactive: bool = False) -> list[dict]:
+        where, params = [], []
+        if email:
+            where.append("email = ?")
+            params.append(email.strip().lower())
+        if not include_inactive:
+            where.append("revoked_at IS NULL AND (expires_at IS NULL OR expires_at > ?)")
+            params.append(time.time())
+        rows = self._all("SELECT * FROM user_grants" + (" WHERE " + " AND ".join(where) if where else "")
+                         + " ORDER BY id DESC", tuple(params))
+        used = self.credit_used([g["id"] for g in rows if g["kind"] == "credits"])
+        for g in rows:
+            if g["kind"] == "credits":
+                g["left"] = max(0, g["amount"] - used.get(g["id"], 0))
+        return rows
 
     def get_integration(self, user_id: int, kind: str) -> dict | None:
         return self._one("SELECT * FROM user_integrations WHERE user_id = ? AND kind = ?", (user_id, kind))

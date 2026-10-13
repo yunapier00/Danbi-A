@@ -34,6 +34,7 @@ interface Me {
   anonymous_allowed: boolean;
   domain: string;
   remaining: number | null;
+  credits?: number;          // remaining 중 추가 이용권
 }
 
 const SESSION_KEY = "danbi_session";
@@ -75,7 +76,8 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
-  const [remaining, setRemaining] = useState<number | null>(null);  // 오늘 남은 질문 수 (서버가 done에 실어 보냄)
+  const [remaining, setRemaining] = useState<number | null>(null);  // 남은 질문 수 (서버가 done에 실어 보냄)
+  const [credits, setCredits] = useState(0);                          // 그중 추가 이용권 (하루 한도를 다 쓴 뒤 쓰는 몫)
   const [me, setMe] = useState<Me | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [convs, setConvs] = useState<Conversation[] | null>(null);   // 로그인 사용자의 지난 대화
@@ -101,6 +103,7 @@ export default function ChatPage() {
       if (!m) { setMe({ user: null, login_enabled: false, anonymous_allowed: true, domain: "", remaining: null }); return; }
       setMe(m);
       if (typeof m.remaining === "number") setRemaining(m.remaining);
+      setCredits(m.credits || 0);
     }).catch(() => setMe({ user: null, login_enabled: false, anonymous_allowed: true, domain: "", remaining: null }));
   }, []);
   useEffect(() => { scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" }); }, [messages]);
@@ -156,7 +159,7 @@ export default function ChatPage() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        if (res.status === 429 && String(body.detail || "").includes("번까지")) setRemaining(0);
+        if (res.status === 429 && String(body.detail || "").includes("번까지")) { setRemaining(0); setCredits(0); }
         if (res.status === 401) setMe((m) => (m ? { ...m, user: null } : m));  // 로그인이 풀렸으면 로그인 화면으로
         throw new Error(body.detail || `요청 실패 (${res.status})`);
       }
@@ -174,6 +177,7 @@ export default function ChatPage() {
           updateBot(botId, () => ({ sources: d.items as Source[] }));
         } else if (event === "done") {
           if (typeof d.remaining === "number") setRemaining(d.remaining);
+          if (typeof d.credits === "number") setCredits(d.credits);
           if (loggedIn) loadConversations();
           updateBot(botId, () => ({
             meta: { toolCalls: Number(d.tool_calls), elapsed: Number(d.elapsed), runId: (d.run_id as string) || null },
@@ -231,6 +235,7 @@ export default function ChatPage() {
     reset();
     setConvs(null);
     setRemaining(null);
+    setCredits(0);
     setMe((m) => (m ? { ...m, user: null } : m));
   };
   const needLogin = me !== null && !me.user && !me.anonymous_allowed;
@@ -339,7 +344,9 @@ export default function ChatPage() {
         </form>
         <div className="hint">
           {remaining !== null && <>
-            <span className={remaining === 0 ? "hint-quota empty" : "hint-quota"}>오늘 남은 질문 {remaining}회</span>
+            <span className={remaining === 0 ? "hint-quota empty" : "hint-quota"}>
+              {credits > 0 ? `남은 질문 ${remaining}회 (추가 이용권 ${credits}회 포함)` : `오늘 남은 질문 ${remaining}회`}
+            </span>
             <span className="hint-sep" aria-hidden="true">·</span>
           </>}
           <span className="hint-keys">Enter 보내기 · Shift+Enter 줄바꿈</span>

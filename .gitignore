@@ -32,6 +32,10 @@ Danbi_image.png
 docs/BACKLOG.md
 docs/FEATURE_IDEAS.md
 docs/TECH_IDEAS.md
+docs/RAILWAY_SHELL.md
+
+# 로컬 전용 운영 도구 (Railway 운영 DB 내려받기)
+scripts/pull_railway_db.py
 
 # RAG 원본 중 쓰지 않는 자료 (나무위키 사본·입시 모집요강 등 — docs/RETRIEVAL.md 참고)
 rag_sources/other/

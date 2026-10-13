@@ -63,6 +63,12 @@ Dockerfile로 빌드합니다(`railway.json`). 이미지 하나에 React 화면�
 - **레플리카·워커는 1개로 유지**합니다. 세션·요청 제한이 메모리에 있고 DB가 SQLite라 여러 개로 늘리면 상태가 갈라집니다.
 - 보관 기간 정리: Railway 서비스 셸에서 `python -m danbi.ops purge` (180일 지난 실행 삭제, 90일 지난 IP 비움, 감사 로그는 유지). 주기적으로 돌리려면 Railway Cron 서비스를 따로 둡니다.
 - 감사 로그 무결성 검사: `python -m danbi.ops verify`
+- 질문 이용권 (지정한 사람의 질문 횟수 늘리기): Railway 서비스 셸에서 실행합니다. 추적 DB가 볼륨에 있으므로 내 PC에서 돌리면 운영 DB가 아니라 로컬 DB에 들어갑니다.
+  - `python -m danbi.ops grant --email a@dankook.ac.kr --daily 20 --until 2026-12-31`: 그날까지 하루 20회
+  - `python -m danbi.ops grant --email a@dankook.ac.kr --credits 50 --days 90`: 하루 한도를 다 쓴 뒤 쓸 50회, 90일 동안
+  - `python -m danbi.ops grants`: 이용권 목록 (`--all`이면 만료·취소된 것도 표시)
+  - `python -m danbi.ops revoke <ID>`: 이용권 취소
+  - 아직 로그인한 적 없는 사람에게도 이메일로 줄 수 있고, 주고 취소한 기록은 감사 로그에 남습니다.
 - RAG DB를 바꾸면 `chroma_db_dd3/`를 교체해 커밋하고 재배포합니다.
 - 이미지 빌드는 로컬에서 `docker build -t danbi .`로 미리 확인할 수 있습니다.
 
