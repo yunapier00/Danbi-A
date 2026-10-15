@@ -218,7 +218,7 @@ export function Waterfall({ detail }: { detail: RunDetail }) {
           return (
             <g key={i}>
               <text x={LBL - 8} y={y + 15} textAnchor="end" className="lbl">
-                {(r.err ? "▲ " : "") + (r.label.length > 24 ? r.label.slice(0, 23) + "…" : r.label)}
+                {(r.err ? "⚠ " : "") + (r.label.length > 24 ? r.label.slice(0, 23) + "…" : r.label)}
               </text>
               <rect x={x} y={y + 5} width={w} height={14} rx={Math.min(4, w / 2)} fill={`var(${r.kind === "llm" ? "--series-1" : "--series-2"})`} />
               <text x={x + w + 6} y={y + 16} className="val">{ms((r.e - r.s) * 1000)}</text>

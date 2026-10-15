@@ -36,7 +36,7 @@ export function RunsList({ api, query, tick, offset, setOffset, onOpen, onError 
               <td className="num">{ms(r.latency_ms)}</td>
               <td className="num">{r.tool_calls}{r.tool_errors ? ` (오류 ${r.tool_errors})` : ""}</td>
               <td className="num">{compact((r.input_tokens || 0) + (r.output_tokens || 0))}</td>
-              <td>{r.feedback == null ? "" : r.feedback > 0 ? "좋아요" : r.feedback < 0 ? "아쉬워요" : "±"}</td>
+              <td>{r.feedback == null ? "" : r.feedback > 0 ? "👍" : r.feedback < 0 ? "👎" : "±"}</td>
             </tr>
           ))}
         </tbody>
@@ -116,7 +116,7 @@ export function RunDetail({ api, id, onBack, onOpen, onError }: {
         {steps.map((s) => s.k === "llm" ? (
           <details className="step" key={`l${s.c.id}`}>
             <summary><strong>LLM 호출 {s.c.seq}{s.c.attempt ? ` · 재시도 ${s.c.attempt}` : ""}</strong>
-              <span className="muted">{ms(s.c.latency_ms)} · 입력 {num(s.c.input_tokens)} / 출력 {num(s.c.output_tokens)} · {s.c.error ? "▲ 오류" : s.c.stop_reason || ""}</span>
+              <span className="muted">{ms(s.c.latency_ms)} · 입력 {num(s.c.input_tokens)} / 출력 {num(s.c.output_tokens)} · {s.c.error ? "⚠ 오류" : s.c.stop_reason || ""}</span>
             </summary>
             {s.c.error && <pre>{s.c.error}</pre>}
             {s.c.text && <><div className="muted">생성한 텍스트</div><pre>{s.c.text}</pre></>}
@@ -125,7 +125,7 @@ export function RunDetail({ api, id, onBack, onOpen, onError }: {
         ) : (
           <details className="step" key={`t${s.c.id}`}>
             <summary><strong>{s.c.name}</strong><span className="pill">LLM {s.c.llm_seq}</span>
-              <span className="muted">{ms(s.c.latency_ms)} · {s.c.is_error ? "▲ 오류" : `결과 ${num(s.c.result_chars)}자`}</span>
+              <span className="muted">{ms(s.c.latency_ms)} · {s.c.is_error ? "⚠ 오류" : `결과 ${num(s.c.result_chars)}자`}</span>
               <span className="muted">{s.c.status_text || ""}</span>
             </summary>
             <div className="muted">인자</div><pre>{JSON.stringify(s.c.arguments, null, 2)}</pre>
@@ -142,14 +142,14 @@ export function RunDetail({ api, id, onBack, onOpen, onError }: {
             <tbody>{d.sources.map((s) => (
               <tr key={s.id}><td>{s.kind === "rag" ? "문서" : "웹"}</td><td>{s.source_id || ""}</td>
                 <td>{s.url ? <a href={s.url} target="_blank" rel="noopener noreferrer">{s.title || s.url}</a> : s.title || ""}</td>
-                <td>{s.cited ? "인용" : ""}</td></tr>
+                <td>{s.cited ? "✓" : ""}</td></tr>
             ))}</tbody>
           </table>
         )}
       </div>
       {d.feedback.length > 0 && (
         <div className="card gap"><h2>사용자 평가</h2>
-          {d.feedback.map((f) => <div key={f.id}>{f.rating > 0 ? "좋아요" : "아쉬워요"} {when(f.created_at)} {f.comment || ""}</div>)}
+          {d.feedback.map((f) => <div key={f.id}>{f.rating > 0 ? "👍" : "👎"} {when(f.created_at)} {f.comment || ""}</div>)}
         </div>
       )}
       {d.conversation.length > 1 && (
