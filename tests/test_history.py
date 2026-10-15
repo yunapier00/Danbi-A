@@ -46,6 +46,7 @@ def test_list_and_open_conversations(env):
     assert msgs[0]["sources"] == [{"title": "졸업시험 공지", "url": "https://x/post/1"}] and msgs[1]["sources"] == []
     assert msgs[0]["id"] and msgs[0]["status"] == "ok" and msgs[0]["tool_calls"] == 1
     assert "user_key" not in msgs[0]
+    assert msgs[0]["steps"] == ["자료를 찾는 중"] and msgs[1]["steps"] == []   # 찾아본 과정 (도구 진행 문구)
 
 
 def test_other_users_cannot_see_or_continue(env):

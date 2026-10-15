@@ -652,8 +652,16 @@ class TraceStore:
         for s in self._all(f"SELECT run_id, title, url FROM sources WHERE run_id IN ({marks}) AND url IS NOT NULL "
                            f"AND url != '' ORDER BY id", tuple(r["id"] for r in runs)):
             links.setdefault(s["run_id"], {}).setdefault(s["url"], {"title": s["title"] or "", "url": s["url"]})
+        # 찾아본 과정: 도구 호출의 진행 문구(사용자에게 보였던 그대로), 같은 문구는 한 번만
+        steps: dict[str, list[str]] = {}
+        for t in self._all(f"SELECT run_id, status_text FROM tool_calls WHERE run_id IN ({marks}) ORDER BY id",
+                           tuple(r["id"] for r in runs)):
+            lst = steps.setdefault(t["run_id"], [])
+            if t["status_text"] and t["status_text"] not in lst:
+                lst.append(t["status_text"])
         for r in runs:
             r["sources"] = list(links.get(r["id"], {}).values())
+            r["steps"] = steps.get(r["id"], [])
             del r["user_key"]
         return runs
 

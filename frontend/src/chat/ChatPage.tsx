@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import {
-  AlertIcon, CalendarIcon, ChatIcon, CheckIcon, ClockIcon, CloseIcon, ExternalIcon, LinkIcon, MenuIcon, PlusIcon, SearchIcon, SendIcon,
-  ThumbDownIcon, ThumbUpIcon,
+  AlertIcon, CalendarIcon, ChatIcon, CheckIcon, ChevronIcon, ClockIcon, CloseIcon, ExternalIcon, LinkIcon, MenuIcon, PlusIcon,
+  SearchIcon, SendIcon, ThumbDownIcon, ThumbUpIcon,
 } from "../components/icons";
 import { GoogleButton, LOGIN_ERRORS } from "../components/GoogleButton";
 import { Logo, LogoMark } from "../components/Logo";
@@ -15,6 +15,7 @@ interface BotMessage {
   id: number;
   role: "bot";
   status: string | null;   // 도구 실행 중 문구 (null이면 숨김)
+  steps: string[];         // 찾아본 과정 (도구 진행 문구를 차례대로)
   text: string;
   sources: Source[];
   meta: { toolCalls: number; elapsed: number; runId: string | null; rated?: boolean } | null;
@@ -26,7 +27,7 @@ type Message = UserMessage | BotMessage;
 interface Conversation { id: string; title: string; updated_at: number; turns: number }
 interface PastRun {
   id: string; question: string; answer: string | null; status: string; latency_ms: number | null;
-  tool_calls: number; feedback: number | null; sources: Source[];
+  tool_calls: number; feedback: number | null; sources: Source[]; steps?: string[];
 }
 interface Me {
   user: { email: string; name: string | null } | null;
@@ -53,7 +54,7 @@ function toMessages(runs: PastRun[]): Message[] {
     out.push({ id: nextId++, role: "user", text: r.question });
     const failed = !r.answer;
     out.push({
-      id: nextId++, role: "bot", status: null, text: r.answer || "", sources: r.sources,
+      id: nextId++, role: "bot", status: null, steps: r.steps || [], text: r.answer || "", sources: r.sources,
       meta: failed ? null : { toolCalls: r.tool_calls || 0, elapsed: (r.latency_ms || 0) / 1000, runId: r.id,
                               rated: r.feedback !== null },
       error: failed ? (r.status === "running" ? "답변을 만드는 중이었어요." : "답변을 만들지 못했어요.") : null,
@@ -148,7 +149,7 @@ export default function ChatPage() {
     setMessages((all) => [
       ...all,
       { id: nextId, role: "user", text },
-      { id: botId, role: "bot", status: "질문을 살펴보는 중", text: "", sources: [], meta: null, error: null },
+      { id: botId, role: "bot", status: "질문을 살펴보는 중", steps: [], text: "", sources: [], meta: null, error: null },
     ]);
     nextId += 2;
     try {
@@ -170,7 +171,8 @@ export default function ChatPage() {
           storage.set(sessionId.current);
           setActiveId(sessionId.current);
         } else if (event === "status") {
-          updateBot(botId, () => ({ status: String(d.text) }));
+          const parts = String(d.text).split(" · ").filter(Boolean);   // 병렬 호출은 한 번에 온다
+          updateBot(botId, (m) => ({ status: String(d.text), steps: [...m.steps, ...parts.filter((x) => !m.steps.includes(x))] }));
         } else if (event === "token") {
           updateBot(botId, (m) => ({ text: m.text + String(d.text), status: null }));
         } else if (event === "sources") {
@@ -328,6 +330,13 @@ export default function ChatPage() {
           {/* 첫 화면 안내·예시 질문 (2026-10-03 숨김. 다시 쓰려면 아래 줄의 주석을 풀면 된다)
           {messages.length === 0 && <Welcome onAsk={ask} />}
           */}
+          {messages.length === 0 && (
+            <div className="hello">
+              <LogoMark size={44} />
+              <h1>{me?.user?.name ? `${me.user.name}님, 무엇이 궁금하세요?` : "무엇이 궁금하세요?"}</h1>
+              <p>학칙·학사일정·학과 공지·학식·캠퍼스 위치를 학교 자료에서 찾아 출처와 함께 답해요.</p>
+            </div>
+          )}
           {messages.map((m) => (m.role === "user"
             ? <div key={m.id} className="row row-user"><div className="bubble user">{m.text}</div></div>
             : <BotBubble key={m.id} m={m}
@@ -367,16 +376,51 @@ function hostOf(url: string): string {
   try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return url; }
 }
 
+/** 진행 문구("… 검색 중", "… 읽는 중")를 끝난 단계의 말로 바꾼다. */
+function doneText(s: string): string {
+  return s.replace(/읽는 중$/, "읽음").replace(/하는 중$/, "함").replace(/찾는 중$/, "찾음").replace(/\s*중$/, "");
+}
+
+/** 찾아본 과정: 찾는 동안은 단계를 펼쳐 보여 주고, 답이 나오면 한 줄로 접는다 (눌러서 다시 펼침). */
+function Steps({ steps, running }: { steps: string[]; running: boolean }) {
+  const [open, setOpen] = useState(false);
+  if (running) {
+    return (
+      <ol className="steps live" role="status" aria-label="찾아보는 중">
+        {steps.map((s, i) => (
+          <li key={s} className={i === steps.length - 1 ? "now" : "done"}>
+            {i === steps.length - 1 ? <span className="spin" aria-hidden="true" /> : <CheckIcon size={14} />}
+            <span>{i === steps.length - 1 ? s : doneText(s)}</span>
+          </li>
+        ))}
+      </ol>
+    );
+  }
+  return (
+    <div className="steps-wrap">
+      <button type="button" className="steps-toggle" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <SearchIcon /> 찾아본 과정 {steps.length}단계 <ChevronIcon open={open} />
+      </button>
+      {open && (
+        <ol className="steps">
+          {steps.map((s) => <li key={s} className="done"><CheckIcon size={14} /><span>{doneText(s)}</span></li>)}
+        </ol>
+      )}
+    </div>
+  );
+}
+
 function BotBubble({ m, onConnect }: { m: BotMessage; onConnect?: () => void }) {
-  const thinking = m.status !== null && !m.text && !m.error;
+  const running = m.status !== null && !m.text && !m.error;
   return (
     <div className="row row-bot">
-      <span className="avatar" aria-hidden="true"><LogoMark size={18} /></span>
+      <span className="avatar" aria-hidden="true"><LogoMark size={20} /></span>
       <div className="bubble bot">
-        {thinking && (
+        {m.steps.length > 0 && <Steps steps={m.steps} running={running} />}
+        {running && m.steps.length === 0 && (
           <div className="thinking" role="status">
             <span className="dots" aria-hidden="true"><i /><i /><i /></span>
-            <span className="thinking-text"><SearchIcon /> {m.status}</span>
+            <span className="thinking-text">{m.status}</span>
           </div>
         )}
         {m.text && <Markdown className="answer" text={m.text} />}
@@ -386,11 +430,12 @@ function BotBubble({ m, onConnect }: { m: BotMessage; onConnect?: () => void }) 
         )}
         {m.sources.length > 0 && (
           <div className="sources">
-            <div className="sources-title"><LinkIcon /> 원문 {m.sources.length}개</div>
+            <div className="sources-title"><LinkIcon /> 출처 {m.sources.length}</div>
             <ul>
-              {m.sources.map((s) => (
+              {m.sources.map((s, i) => (
                 <li key={s.url}>
                   <a href={s.url} target="_blank" rel="noopener noreferrer">
+                    <span className="src-no" aria-hidden="true">{i + 1}</span>
                     <span className="src-title">{s.title || s.url}</span>
                     <span className="src-host">{hostOf(s.url)} <ExternalIcon /></span>
                   </a>

@@ -30,8 +30,8 @@ export function Overview({ api, query, tick, onTools, onError }: {
     ["토큰", compact(t.input_tokens + t.output_tokens), `입력 ${compact(t.input_tokens)} · 출력 ${compact(t.output_tokens)} · 캐시 ${compact(t.cached_tokens)}`],
     ["추정 비용", t.cost_usd == null ? "–" : "$" + t.cost_usd.toFixed(4), t.cost_usd == null ? "settings.yaml llm.pricing 미설정" : "선택 기간 합계"],
     ["인용률", pct(t.source_cited, t.source_refs), `출처 ${compact(t.source_refs)}건 중 답변에 등장`],
-    ["사용자 평가", `👍 ${t.feedback_up} · 👎 ${t.feedback_down}`,
-     t.feedback_up + t.feedback_down ? `긍정 ${pct(t.feedback_up, t.feedback_up + t.feedback_down)}` : "평가 없음"],
+    ["사용자 평가", `${compact(t.feedback_up)} / ${compact(t.feedback_down)}`,
+     "좋아요 / 아쉬워요" + (t.feedback_up + t.feedback_down ? ` · 긍정 ${pct(t.feedback_up, t.feedback_up + t.feedback_down)}` : " · 평가 없음")],
   ];
   return (
     <section className={loading ? "loading" : ""}>

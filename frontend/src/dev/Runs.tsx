@@ -36,7 +36,7 @@ export function RunsList({ api, query, tick, offset, setOffset, onOpen, onError 
               <td className="num">{ms(r.latency_ms)}</td>
               <td className="num">{r.tool_calls}{r.tool_errors ? ` (오류 ${r.tool_errors})` : ""}</td>
               <td className="num">{compact((r.input_tokens || 0) + (r.output_tokens || 0))}</td>
-              <td>{r.feedback == null ? "" : r.feedback > 0 ? "👍" : r.feedback < 0 ? "👎" : "±"}</td>
+              <td>{r.feedback == null ? "" : r.feedback > 0 ? "좋아요" : r.feedback < 0 ? "아쉬워요" : "±"}</td>
             </tr>
           ))}
         </tbody>
@@ -149,7 +149,7 @@ export function RunDetail({ api, id, onBack, onOpen, onError }: {
       </div>
       {d.feedback.length > 0 && (
         <div className="card gap"><h2>사용자 평가</h2>
-          {d.feedback.map((f) => <div key={f.id}>{f.rating > 0 ? "👍" : "👎"} {when(f.created_at)} {f.comment || ""}</div>)}
+          {d.feedback.map((f) => <div key={f.id}>{f.rating > 0 ? "좋아요" : "아쉬워요"} {when(f.created_at)} {f.comment || ""}</div>)}
         </div>
       )}
       {d.conversation.length > 1 && (
