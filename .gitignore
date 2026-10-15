@@ -39,3 +39,6 @@ scripts/pull_railway_db.py
 
 # RAG 원본 중 쓰지 않는 자료 (나무위키 사본·입시 모집요강 등 — docs/RETRIEVAL.md 참고)
 rag_sources/other/
+
+# 디자인 비교용 보관본 (로컬 전용, archive/frontend_before_navy_2026-10-15/README.md)
+archive/
