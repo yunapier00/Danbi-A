@@ -128,6 +128,16 @@ class Retriever:
                     break
         return [t for t in dict.fromkeys(out) if len(t) >= 2 or t.isascii()]
 
+    def named_sources(self, query: str) -> set[str]:
+        """질문에 짧은 이름이 그대로 들어 있는 문서(파일명). 더 긴 이름에 포함되는 이름은 뺀다
+        ('학칙 시행세칙'을 물으면 '학칙'은 해당하지 않는다)."""
+        q = re.sub(r"\s+", "", query)
+        shorts = {f: re.sub(r"\s+", "", i.short) for f, i in self.store.info.items() if i.short}
+        hit = {f: s for f, s in shorts.items() if s and s in q}
+        # '시행세칙'처럼 긴 이름의 뒷부분만 써도 그 문서로 본다
+        hit.update({f: s for f, s in shorts.items() if len(s) > 4 and s[-4:] in q})
+        return {f for f, s in hit.items() if not any(s != o and s in o for o in hit.values())}
+
     def expansions(self, query: str) -> list[str]:
         """질문에 든 줄임말의 공식 용어 (임베딩 확장용)."""
         out: list[str] = []
@@ -255,11 +265,13 @@ class Retriever:
         for weight, ranking in ranks:
             for r, cid in enumerate(ranking, 1):
                 fused[cid] += weight / (RRF_K + r)
-        # 조항 번호 정확 일치(제목)는 맨 앞
+        # 조항 번호 정확 일치(제목)는 맨 앞. 같은 번호가 여러 문서에 있으면 질문이 이름으로 가리킨 문서를 먼저
+        # ("학칙 제29조" → 학칙, "시행세칙 제29조" → 학칙 시행세칙)
         articles = [_norm(m) for m in _ARTICLE.findall(query)]
         article_hits = [cid for cid in fused if any(a and f"{a}(" in self._head[cid] for a in articles)]
+        named = self.named_sources(query) if article_hits else set()
         for cid in article_hits:
-            fused[cid] += 1
+            fused[cid] += 1 + (0.5 if self.chunks[cid].source in named else 0)
         order = sorted(fused, key=lambda i: -fused[i])
         if opts.denoise:
             order = [i for i in order if not self.is_noise(i, query)] + [i for i in order if self.is_noise(i, query)]

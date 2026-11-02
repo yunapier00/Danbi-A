@@ -22,6 +22,19 @@ RAG_RESULT = """[source: campus_rules] 문서 검색 결과 2건 — 질의: 셔
 WEB_RESULT = "[source: sw / section: notice(학과공지)] 게시글 7\n제목: 졸업시험 공지\n작성일: 2026.09.22\nURL: https://x/7\n---\n본문"
 
 
+def test_rag_chunks_with_source_links_also_give_web_sources():
+    text = ("[source: danbi_docs] 문서 검색 결과 2건 — 질의: 편의점\n"
+            "(1) 학교 홈페이지 안내 [2026.11.02 수집] > 죽전캠퍼스 편의시설 > 편의점 | 거리 0.300\n"
+            "## 편의점\n원문: https://dankook.ac.kr/-525\n| 위치 | 운영시간 |\n"
+            "(2) 학칙 [2026.08.31 개정본] > 제5장\n키워드로만 찾은 조각 (거리 없음)")
+    refs = extract_sources("search_knowledge", text)
+    assert [(r.kind, r.title, r.url) for r in refs] == [
+        ("rag", "학교 홈페이지 안내 [2026.11.02 수집] > 죽전캠퍼스 편의시설 > 편의점", ""),
+        ("web", "죽전캠퍼스 편의시설 > 편의점", "https://dankook.ac.kr/-525"),
+        ("rag", "학칙 [2026.08.31 개정본] > 제5장", ""),
+    ]
+
+
 def test_extract_and_cite_sources():
     rag = extract_sources("search_knowledge", RAG_RESULT)
     assert [(r.kind, r.source_id, r.title) for r in rag] == [

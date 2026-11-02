@@ -107,3 +107,13 @@ async def test_bm25_options_rank_matching_chunks(store):
 def test_bm25_idf_prefers_rare_terms(store):
     r = Retriever(store, RecordingEmbedder({}))
     assert r._bm25_idf(100, 1) > r._bm25_idf(100, 50) > 0   # 드문 단어일수록 무겁고, 흔해도 음수가 되지 않는다
+
+
+def test_named_sources_prefers_the_document_the_question_names(store):
+    """같은 조문 번호가 여러 문서에 있을 때 질문이 이름으로 가리킨 문서를 고른다 ('학칙' ⊂ '학칙 시행세칙')."""
+    r = Retriever(store, RecordingEmbedder({}))
+    store.info["s.md"] = RagSourceInfo(short="학칙 시행세칙", label="학칙 시행세칙")
+    assert r.named_sources("학칙 제27조 내용") == {R}
+    assert r.named_sources("시행세칙 제27조") == {"s.md"}
+    assert r.named_sources("학칙 시행세칙 제27조") == {"s.md"}
+    assert r.named_sources("제27조 내용") == set()

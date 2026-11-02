@@ -14,7 +14,7 @@ _SOURCE_ID = re.compile(r"^\[source: ([\w.-]+)", re.M)
 _URL_LINE = re.compile(r"(?:^|\]\s)(?:URL|게시판|원문): (https?://[^\s,]+(?:, https?://[^\s,]+)*)", re.M)
 _SECTION = re.compile(r"^\[source: ([\w.-]+) / section: [\w]+\((.+?)\)\]", re.M)
 _TITLE_LINE = re.compile(r"^(?:제목|게시글 제목): (.+?)(?: \| 작성일.*)?$", re.M)
-_RAG_HIT = re.compile(r"^\(\d+\) (.+?) \| ", re.M)
+_RAG_HIT = re.compile(r"^\(\d+\) (.+?)(?: \| [^\n]*)?$", re.M)   # 키워드로만 찾은 조각은 ' | 거리' 없이 끝난다
 # 캠퍼스맵(query_data campus_map): '### 캠퍼스 · 건물' 다음 줄의 '지도: 링크' (링크에 쉼표가 들어 있다)
 _MAP_LINK = re.compile(r"^### (?:[^·\n]+ · )?(.+?)(?: \(별칭: .*\))?\n지도: (https?://\S+)", re.M)
 # list_sources: '- [검색 지원] id: 이름 (소속)' 줄 아래 들여쓴 '원문:'(연락처를 가져온 단과대학 페이지)·'홈페이지:'
@@ -37,11 +37,20 @@ def extract_sources(tool_name: str, text: str) -> list[SourceRef]:
     source_id = m.group(1) if m else ""
     if tool_name == "search_knowledge":
         seen, out = set(), []
-        for hit in _RAG_HIT.finditer(text):
+        hits = list(_RAG_HIT.finditer(text))
+        for i, hit in enumerate(hits):
             title = hit.group(1).strip()
             if title not in seen:
                 seen.add(title)
                 out.append(SourceRef("rag", source_id, title))
+            # 홈페이지 스냅숏처럼 원문 링크가 있는 조각은 그 링크도 출처로 (제목은 문서 이름을 뺀 위치)
+            body = text[hit.end(): hits[i + 1].start() if i + 1 < len(hits) else len(text)]
+            where = " > ".join(title.split(" > ")[1:]) or title
+            for line in _URL_LINE.finditer(body):
+                for url in line.group(1).split(", "):
+                    if url not in seen:
+                        seen.add(url)
+                        out.append(SourceRef("web", source_id, where, url))
         return out
     if tool_name == "list_sources":
         return _dept_links(text)

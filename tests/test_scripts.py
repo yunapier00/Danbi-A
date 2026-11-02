@@ -282,3 +282,30 @@ def test_env_overrides(monkeypatch, tmp_path):
     assert s.ops.db_path == tmp_path / "danbi_ops.sqlite"
     assert s.crawler.cache_path == tmp_path / "cache" / "danbi_cache.sqlite"
     assert s.ops.trust_proxy_headers is True and s.ops.proxy_hops == 2 and s.enable_docs is False
+
+
+# --- collect_main_pages (네트워크 없이) ---------------------------------------------------
+
+from scripts.collect_main_pages import to_rag_markdown
+
+
+def test_main_page_to_rag_markdown():
+    body = ("## 사이트 경로\n\n* [죽전캠퍼스](https://dankook.ac.kr/-525)\n\n"
+            "### 편의점\n\n| 위치 | 운영시간 |\n| --- | --- |\n| 혜당관 | 24시간 |\n\n"
+            "### 복사점\n\n[바로가기 chevron\_right](https://x)\n")
+    md = to_rag_markdown("죽전캠퍼스 편의시설", "https://dankook.ac.kr/-525", body)
+    assert md.startswith("# 죽전캠퍼스 편의시설\n")
+    assert "사이트 경로" not in md and "chevron" not in md               # 탐색 구획·아이콘 글자 제거
+    assert md.count("원문: https://dankook.ac.kr/-525") == 2              # ### → ## 로 올리고 구획마다 링크
+    assert "## 편의점\n원문: https://dankook.ac.kr/-525\n" in md and "## 복사점" in md and "###" not in md
+
+
+def test_main_page_intro_and_long_sections():
+    url = "https://dankook.ac.kr/-454"
+    md = to_rag_markdown("증명서", url, "안내 첫 문단입니다\n\n## 학부\n\n표")
+    assert md.startswith(f"# 증명서\n\n원문: {url}\n안내 첫 문단입니다")    # 첫 제목 앞 글에도 링크
+    long = "## 학점교류\n\n소개\n\n### 목적\n\n" + "가" * 800 + "\n\n### 대상\n\n" + "나" * 800
+    md = to_rag_markdown("학점교류 안내", url, long)
+    assert "## 학점교류\n원문:" in md and "## 학점교류 · 목적" in md and "## 학점교류 · 대상" in md
+    plain = to_rag_markdown("계절학기", url, "제목 없는 본문만 있는 페이지")
+    assert "## 계절학기\n원문: " in plain

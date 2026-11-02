@@ -17,7 +17,7 @@
   gold: [{src: 학칙 시행세칙, head: 복학}, {src: 학칙, head: 제24조(복학)}, {src: 학사일정, head: 복학 및 재입학 신청}]   # '언제'에는 학사일정의 신청 기간도 정답
 - id: warning-expel
   q: 학사경고 몇 번 받으면 제적이야?
-  gold: [{src: 학칙, head: 학사경고}, {src: 학칙, head: 제26조(제적)}]
+  gold: [{src: 학칙, head: 학사경고}, {src: 학칙, head: 제26조(제적)}, {src: 홈페이지 안내, head: 학사경고 제적}]   # 홈페이지: '연속 3회 학사경고 → 제적' (2026-11-02 추가)
 - id: readmission
   q: 재입학 조건이 뭐야?
   gold: [{src: 학칙, head: 재입학 자격}]
@@ -56,7 +56,7 @@
   gold: [{src: 학칙, head: 제29조(교과이수단위)}]
 - id: tuition-refund
   q: 등록금 환불은 어떻게 돼?
-  gold: [{src: 학칙, head: 등록금 등의 반환}]
+  gold: [{src: 학칙, head: 등록금 등의 반환}, {src: 홈페이지 안내, head: 등록금 반환기준}]   # 홈페이지: 반환 기준표
 - id: scholarship-rule
   q: 장학금은 어떤 기준으로 줘?
   gold: [{src: 학칙, head: 제77조(장학금)}]
@@ -71,7 +71,7 @@
   gold: [{src: 학칙 시행세칙, head: 졸업논문 대체}]
 - id: course-change
   q: 수강신청 정정 기간에 과목 바꿀 수 있어?
-  gold: [{src: 학칙 시행세칙, head: 수강신청 정정}]
+  gold: [{src: 학칙 시행세칙, head: 수강신청 정정}, {src: 홈페이지 안내, head: 수강신청 정정}]
 - id: lib-vacation
   q: 도서관 자료실 방학 때 몇 시까지 열어?
   gold: [{src: 도서관, head: 자료실 방학 중}]
@@ -112,7 +112,7 @@
 # --- 줄임말·구어체 (학생들이 실제로 쓰는 표현) ---
 - id: slang-warning
   q: 학고 맞으면 어떻게 돼?
-  gold: [{src: 학칙, head: 학사경고}]
+  gold: [{src: 학칙, head: 학사경고}, {src: 홈페이지 안내, head: 학사경고}]
 - id: slang-early
   q: 조졸 조건 알려줘
   gold: [{src: 학칙 시행세칙, head: 조기졸업 신청자격}]
@@ -139,4 +139,4 @@
   gold: [{src: 캠퍼스맵, head: 혜당관}]
 - id: slang-quit
   q: 자퇴하면 등록금 돌려받을 수 있어?
-  gold: [{src: 학칙, head: 등록금 등의 반환}]
+  gold: [{src: 학칙, head: 등록금 등의 반환}, {src: 홈페이지 안내, head: 등록금 반환기준}]
