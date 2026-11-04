@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import {
   AlertIcon, CalendarIcon, ChatIcon, CheckIcon, ChevronIcon, ClockIcon, CloseIcon, ExternalIcon, LinkIcon, MenuIcon, PlusIcon,
-  SearchIcon, SendIcon, ThumbDownIcon, ThumbUpIcon,
+  SearchIcon, SendIcon, ThumbDownIcon, ThumbUpIcon, TrashIcon,
 } from "../components/icons";
 import { GoogleButton, LOGIN_ERRORS } from "../components/GoogleButton";
 import { Logo, LogoMark } from "../components/Logo";
@@ -232,6 +232,22 @@ export default function ChatPage() {
     textarea.current?.focus();
   };
 
+  // 로고: 첫 화면(새 대화)으로. 답변 중이면 페이지를 새로 열어 진행 중인 응답을 확실히 끊는다
+  const goHome = (e: { preventDefault: () => void }) => {
+    e.preventDefault();
+    if (busy) { location.assign("/"); return; }
+    reset();
+  };
+
+  // 대화 삭제: 내 목록에서만 지운다 (서버는 운영 기록을 남겨 둔다)
+  const deleteConversation = async (c: Conversation) => {
+    if (!window.confirm(`'${c.title}' 대화를 목록에서 삭제할까요?\n삭제하면 다시 열 수 없어요.`)) return;
+    const res = await fetch(`/api/conversations/${encodeURIComponent(c.id)}`, { method: "DELETE" }).catch(() => null);
+    if (!res || !res.ok) { setLoginError("대화를 삭제하지 못했어요. 잠시 후 다시 시도해 주세요."); return; }
+    setConvs((all) => (all ? all.filter((x) => x.id !== c.id) : all));
+    if (c.id === activeId || c.id === sessionId.current) reset();
+  };
+
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
     reset();
@@ -250,9 +266,11 @@ export default function ChatPage() {
             <button className="icon-btn menu-btn" type="button" aria-label="지난 대화" aria-expanded={drawer}
                     onClick={() => setDrawer((v) => !v)}><MenuIcon /></button>
           )}
-          <Logo height={26} />
-          <span className="brand-sep" aria-hidden="true" />
-          <small className="brand-sub">단국대학교 비서 AI</small>
+          <a className="brand-home" href="/" onClick={goHome} title="첫 화면으로">
+            <Logo height={26} />
+            <span className="brand-sep" aria-hidden="true" />
+            <small className="brand-sub">단국대학교 비서 AI</small>
+          </a>
         </div>
         <div className="top-actions">
           {!needLogin && (
@@ -298,12 +316,16 @@ export default function ChatPage() {
             {convs.length === 0 ? <p className="sidebar-empty">아직 대화가 없어요.</p> : (
               <ul className="conv-list">
                 {convs.map((c) => (
-                  <li key={c.id}>
+                  <li key={c.id} className="conv-item">
                     <button type="button" className={c.id === activeId ? "conv active" : "conv"} disabled={busy}
                             aria-current={c.id === activeId ? "true" : undefined} onClick={() => void openConversation(c.id)}>
                       <ChatIcon />
                       <span className="conv-title">{c.title}</span>
                       <span className="conv-when">{whenLabel(c.updated_at)}</span>
+                    </button>
+                    <button type="button" className="conv-del" disabled={busy} title="대화 삭제"
+                            aria-label={`'${c.title}' 대화 삭제`} onClick={() => void deleteConversation(c)}>
+                      <TrashIcon />
                     </button>
                   </li>
                 ))}

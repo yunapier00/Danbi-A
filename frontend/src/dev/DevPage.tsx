@@ -139,7 +139,7 @@ export default function DevPage() {
       <TooltipProvider>
         <header>
           <div className="bar">
-            <h1><Logo height={20} /> LLMOps<small>개발자 전용</small></h1>
+            <h1><a className="home-link" href="/" title="단비 첫 화면으로"><Logo height={20} /></a> LLMOps<small>개발자 전용</small></h1>
             <nav role="tablist">
               {([["overview", "개요"], ["runs", "실행 기록"], ["audit", "감사 로그"]] as [Tab, string][]).map(([k, label]) => (
                 <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{label}</button>

@@ -420,6 +420,15 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
         _, ukey = logged_in(request)
         return {"items": recorder.store.user_conversations(ukey)}
 
+    @app.delete("/api/conversations/{conversation_id}")
+    def delete_conversation(conversation_id: str, request: Request):
+        """내 대화 목록에서 삭제 (화면에서만 지운다. 운영 기록은 남는다)."""
+        _, ukey = logged_in(request)
+        if not recorder.store.hide_conversation(conversation_id[:64], ukey):
+            raise HTTPException(404, "대화를 찾을 수 없습니다.")
+        sessions.reset(conversation_id[:64])
+        return {"ok": True}
+
     @app.get("/api/conversations/{conversation_id}")
     def conversation(conversation_id: str, request: Request):
         _, ukey = logged_in(request)

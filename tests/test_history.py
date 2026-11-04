@@ -73,6 +73,23 @@ def test_resume_old_conversation_after_memory_loss(env):
     assert [m["turn"] for m in msgs] == [1, 2]
 
 
+def test_delete_conversation_hides_it_only_from_the_user(env):
+    client, app, provider, google = make(env, [Reply(text="첫 답"), Reply(text="둘째 답"), Reply(text="새 대화 답")])
+    sid, _ = ask(client, "지울 대화")
+    keep, _ = ask(client, "남길 대화")
+    other = TestClient(app, base_url="https://testserver")
+    login(other, google, sub="999", email="other@dankook.ac.kr")
+    assert other.delete(f"/api/conversations/{sid}").status_code == 404     # 남의 대화는 못 지운다
+    assert client.delete(f"/api/conversations/{sid}").json() == {"ok": True}
+    assert [c["id"] for c in client.get("/api/conversations").json()["items"]] == [keep]
+    assert client.get(f"/api/conversations/{sid}").status_code == 404      # 다시 열 수 없다
+    assert client.delete(f"/api/conversations/{sid}").status_code == 404   # 이미 지움
+    store = app.state.guard.recorder.store
+    assert store._one("SELECT COUNT(*) AS n FROM runs WHERE conversation_id = ?", (sid,))["n"] == 1  # 기록은 남는다
+    again, _ = ask(client, "지운 대화 ID로 이어 쓰기", sid)                  # 같은 ID로 보내면 새 대화가 된다
+    assert again != sid
+
+
 def test_history_requires_login(env):
     client, app, _, _ = make(env, [Reply(text="답")])
     anon = TestClient(app, base_url="https://testserver")

@@ -24,6 +24,9 @@ export const CloseIcon = ({ size = 18 }: { size?: number }) => (
 export const SendIcon = ({ size = 18 }: { size?: number }) => (
   <svg {...base(size)}><path d="M12 19V5" /><path d="m5 12 7-7 7 7" /></svg>
 );
+export const TrashIcon = ({ size = 15 }: { size?: number }) => (
+  <svg {...base(size)}><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /></svg>
+);
 export const PlusIcon = ({ size = 16 }: { size?: number }) => (
   <svg {...base(size)}><path d="M12 5v14" /><path d="M5 12h14" /></svg>
 );

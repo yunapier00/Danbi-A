@@ -22,14 +22,14 @@ export function Audit({ api, tick, onError }: { api: Api; tick: number; onError:
         )}
       </div>
       <div className="card">
-        <table>
+        <div className="scroll-x"><table>
           <thead><tr><th>시각</th><th>행위자</th><th>동작</th><th>대상</th><th>상세</th><th>클라이언트</th><th>해시</th></tr></thead>
           <tbody>{d.items.map((a) => (
             <tr key={a.id}><td>{when(a.at)}</td><td>{a.actor}</td><td>{a.action}</td><td>{a.target || ""}</td>
               <td className="muted">{a.detail && a.detail !== "{}" ? a.detail : ""}</td><td>{a.client || ""}</td>
               <td className="muted" title={a.hash}>{a.hash.slice(0, 10)}</td></tr>
           ))}</tbody>
-        </table>
+        </table></div>
       </div>
     </section>
   );

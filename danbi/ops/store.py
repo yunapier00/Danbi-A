@@ -19,8 +19,8 @@ import threading
 import time
 from pathlib import Path
 
-SCHEMA_VERSION = 6  # 2: runs.client_ip, 3: runs.user_key, 4: users·auth_sessions (Google 로그인), 5: user_integrations,
-                    # 6: user_grants·credit_ledger (질문 이용권)
+SCHEMA_VERSION = 7  # 2: runs.client_ip, 3: runs.user_key, 4: users·auth_sessions (Google 로그인), 5: user_integrations,
+                    # 6: user_grants·credit_ledger (질문 이용권), 7: conversations.hidden_at (사용자가 목록에서 삭제)
 MAX_TEXT = 50_000  # 도구 결과·답변 저장 상한 (감사용으로 거의 전부 남긴다)
 
 SCHEMA = """
@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS conversations (
     channel     TEXT NOT NULL,              -- web | cli | eval
     created_at  REAL NOT NULL,
     updated_at  REAL NOT NULL,
-    turns       INTEGER NOT NULL DEFAULT 0
+    turns       INTEGER NOT NULL DEFAULT 0,
+    hidden_at   REAL                        -- 사용자가 대화 목록에서 삭제한 시각. 기록 자체는 지우지 않는다 (/dev에서는 그대로 보임)
 );
 CREATE TABLE IF NOT EXISTS prompt_versions (
     hash        TEXT PRIMARY KEY,
@@ -233,6 +234,9 @@ class TraceStore:
             self._db.execute("ALTER TABLE runs ADD COLUMN client_ip TEXT")
         if "user_key" not in cols:
             self._db.execute("ALTER TABLE runs ADD COLUMN user_key TEXT")
+        conv_cols = {r[1] for r in self._db.execute("PRAGMA table_info(conversations)").fetchall()}
+        if "hidden_at" not in conv_cols:
+            self._db.execute("ALTER TABLE conversations ADD COLUMN hidden_at REAL")
         self._db.execute("CREATE INDEX IF NOT EXISTS idx_runs_ip ON runs(client_ip, started_at)")
         self._db.execute("CREATE INDEX IF NOT EXISTS idx_runs_user ON runs(user_key, started_at)")
 
@@ -637,7 +641,18 @@ class TraceStore:
             "COUNT(*) AS turns, (SELECT q.question FROM runs q WHERE q.conversation_id = r.conversation_id "
             "ORDER BY q.turn, q.started_at LIMIT 1) AS title "
             "FROM runs r WHERE r.user_key = ? AND r.channel = ? AND r.conversation_id IS NOT NULL "
+            "AND r.conversation_id NOT IN (SELECT id FROM conversations WHERE hidden_at IS NOT NULL) "
             "GROUP BY r.conversation_id ORDER BY updated_at DESC LIMIT ?", (user_key, channel, limit))
+
+    def hide_conversation(self, conversation_id: str, user_key: str) -> bool:
+        """사용자 화면에서 대화를 지운다 (목록·열기에서 빠짐). 실행 기록은 그대로 두어 운영·감사에 쓴다.
+        대화의 모든 실행이 이 사용자 것일 때만 숨긴다. 숨겼으면 True."""
+        owners = self._all("SELECT DISTINCT user_key FROM runs WHERE conversation_id = ?", (conversation_id,))
+        if not owners or any(o["user_key"] != user_key for o in owners):
+            return False
+        cur = self._exec("UPDATE conversations SET hidden_at = ? WHERE id = ? AND hidden_at IS NULL",
+                         (time.time(), conversation_id))
+        return cur.rowcount > 0
 
     def conversation_messages(self, conversation_id: str, user_key: str) -> list[dict] | None:
         """한 대화의 질문·답변·출처. 대화의 모든 실행이 이 사용자 것이 아니면 None (남의 대화는 못 본다)."""
@@ -647,6 +662,8 @@ class TraceStore:
             "FROM runs WHERE conversation_id = ? ORDER BY turn, started_at", (conversation_id,))
         if not runs or any(r["user_key"] != user_key for r in runs):
             return None
+        if self._one("SELECT 1 AS x FROM conversations WHERE id = ? AND hidden_at IS NOT NULL", (conversation_id,)):
+            return None   # 사용자가 삭제한 대화는 다시 열거나 이어 쓰지 못한다
         marks = ", ".join("?" * len(runs))
         links: dict[str, dict[str, dict]] = {}
         for s in self._all(f"SELECT run_id, title, url FROM sources WHERE run_id IN ({marks}) AND url IS NOT NULL "

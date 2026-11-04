@@ -23,7 +23,7 @@ export function RunsList({ api, query, tick, offset, setOffset, onOpen, onError 
   if (!data) return null;
   return (
     <div className={`card ${loading ? "loading" : ""}`}>
-      <table className="runs-table">
+      <div className="scroll-x"><table className="runs-table">
         <thead><tr><th>시각</th><th>채널</th><th>사용자 / IP</th><th>질문</th><th>상태</th><th className="num">응답</th>
           <th className="num">도구</th><th className="num">토큰</th><th>평가</th></tr></thead>
         <tbody>
@@ -40,7 +40,7 @@ export function RunsList({ api, query, tick, offset, setOffset, onOpen, onError 
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></div>
       <div className="pager">
         <span>{num(data.total)}건 중 {data.total ? offset + 1 : 0}–{Math.min(offset + LIMIT, data.total)}</span>
         <button className="ghost" type="button" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - LIMIT))}>이전</button>
@@ -137,14 +137,14 @@ export function RunDetail({ api, id, onBack, onOpen, onError }: {
         <h2>출처 {d.sources.length}건</h2>
         <div className="desc">도구 결과에 나온 출처. '인용'은 답변 본문에 링크나 문서명이 나온 경우 (근사치)</div>
         {d.sources.length > 0 && (
-          <table>
+          <div className="scroll-x"><table>
             <thead><tr><th>종류</th><th>소스</th><th>제목</th><th>인용</th></tr></thead>
             <tbody>{d.sources.map((s) => (
               <tr key={s.id}><td>{s.kind === "rag" ? "문서" : "웹"}</td><td>{s.source_id || ""}</td>
                 <td>{s.url ? <a href={s.url} target="_blank" rel="noopener noreferrer">{s.title || s.url}</a> : s.title || ""}</td>
                 <td>{s.cited ? "✓" : ""}</td></tr>
             ))}</tbody>
-          </table>
+          </table></div>
         )}
       </div>
       {d.feedback.length > 0 && (
@@ -154,11 +154,11 @@ export function RunDetail({ api, id, onBack, onOpen, onError }: {
       )}
       {d.conversation.length > 1 && (
         <div className="card gap"><h2>같은 대화의 질문</h2>
-          <table><tbody>{d.conversation.map((c) => (
+          <div className="scroll-x"><table><tbody>{d.conversation.map((c) => (
             <tr key={c.id} tabIndex={0} className={c.id === r.id ? "current" : "link"} onClick={() => c.id !== r.id && onOpen(c.id)}>
               <td className="num">{c.turn}</td><td>{c.question}</td><td><StatusBadge status={c.status} /></td><td>{when(c.started_at)}</td>
             </tr>
-          ))}</tbody></table>
+          ))}</tbody></table></div>
         </div>
       )}
     </div>

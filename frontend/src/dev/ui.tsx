@@ -79,10 +79,10 @@ export function TableView({ head, rows }: { head: string[]; rows: (string | numb
   return (
     <details className="tableview">
       <summary>표로 보기</summary>
-      <table>
+      <div className="scroll-x"><table>
         <thead><tr>{head.map((h, i) => <th key={h} className={i ? "num" : ""}>{h}</th>)}</tr></thead>
         <tbody>{rows.map((r, ri) => <tr key={ri}>{r.map((c, i) => <td key={i} className={i ? "num" : ""}>{c}</td>)}</tr>)}</tbody>
-      </table>
+      </table></div>
     </details>
   );
 }

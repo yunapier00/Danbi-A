@@ -9,7 +9,7 @@ from __future__ import annotations
 import html
 import os
 
-EFFECTIVE_DATE = "2026년 10월 12일"
+EFFECTIVE_DATE = "2026년 11월 4일"
 
 _STYLE = """
 body{margin:0;background:#f8fafc;color:#0f172a;font:15px/1.7 system-ui,-apple-system,"Segoe UI","Malgun Gothic",sans-serif}
@@ -61,6 +61,7 @@ def render_privacy() -> str:
 <h2>4. 보유 및 이용 기간</h2>
 <p>개인정보는 서비스를 운영하는 동안 보관합니다. 이용자가 삭제를 요청하거나 서비스를 종료하면 지체 없이 파기합니다.
 다만 관련 법령에 따라 보존해야 하는 경우에는 그 기간 동안 보관합니다.</p>
+<p>웹 화면에서 대화를 삭제하면 이용자의 대화 목록에서 사라지고 다시 열 수 없게 됩니다. 다만 질문·답변 기록은 서비스 운영과 부정 이용 방지를 위해 위 기간 동안 보관되며, 완전한 삭제를 원하면 아래 문의처로 요청할 수 있습니다.</p>
 <p>eclass 캘린더 피드 주소는 이용자가 연결을 해제하면 즉시 삭제합니다. 일정에 관한 질문과 답변은 다른 질문과 같이 질문 기록으로 보관됩니다.</p>
 
 <h2>5. 처리 위탁 및 국외 이전</h2>
