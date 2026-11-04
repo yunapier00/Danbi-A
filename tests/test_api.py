@@ -174,6 +174,29 @@ def test_web_not_built_shows_instructions(monkeypatch, tmp_path):
     assert client.get("/dev").status_code == 503
 
 
+def test_pwa_files_are_served_from_root(monkeypatch, tmp_path):
+    import danbi.api.main as main
+    (tmp_path / "icons").mkdir()
+    (tmp_path / "icons" / "icon-192.png").write_bytes(b"png")
+    (tmp_path / "sw.js").write_text("self.addEventListener('fetch', () => {});", encoding="utf-8")
+    (tmp_path / "manifest.webmanifest").write_text('{"name": "단비"}', encoding="utf-8")
+    monkeypatch.setattr(main, "WEB", tmp_path)
+    client, _ = make_client([])
+    sw = client.get("/sw.js")
+    assert sw.status_code == 200 and sw.headers["content-type"].startswith("text/javascript")
+    assert sw.headers["cache-control"] == "no-cache"          # 배포하면 바로 새 서비스 워커를 받는다
+    mf = client.get("/manifest.webmanifest")
+    assert mf.headers["content-type"].startswith("application/manifest+json") and mf.json()["name"] == "단비"
+    assert client.get("/icons/icon-192.png").content == b"png"
+
+
+def test_pwa_files_missing_is_404(monkeypatch, tmp_path):
+    import danbi.api.main as main
+    monkeypatch.setattr(main, "WEB", tmp_path)
+    client, _ = make_client([])
+    assert client.get("/sw.js").status_code == 404 and client.get("/manifest.webmanifest").status_code == 404
+
+
 # --- 배포 대비 방어 장치 ---------------------------------------------------------------------
 
 from danbi.api.main import MultiLimiter, kst_midnight

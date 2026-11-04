@@ -372,6 +372,23 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
     # 웹 화면 (React SPA): "/"와 "/dev"는 같은 index.html, 나머지 정적 파일은 /assets
     if (WEB / "assets").is_dir():
         app.mount("/assets", StaticFiles(directory=WEB / "assets"), name="assets")
+    if (WEB / "icons").is_dir():
+        app.mount("/icons", StaticFiles(directory=WEB / "icons"), name="icons")
+
+    # 홈 화면 설치(PWA): 서비스 워커는 사이트 전체를 다루도록 루트에서, 늘 새로 확인하게 no-cache
+    @app.get("/sw.js", include_in_schema=False)
+    async def service_worker():
+        if not (WEB / "sw.js").exists():
+            raise HTTPException(404)
+        return FileResponse(WEB / "sw.js", media_type="text/javascript",
+                            headers={"Cache-Control": "no-cache", "Service-Worker-Allowed": "/"})
+
+    @app.get("/manifest.webmanifest", include_in_schema=False)
+    async def manifest():
+        if not (WEB / "manifest.webmanifest").exists():
+            raise HTTPException(404)
+        return FileResponse(WEB / "manifest.webmanifest", media_type="application/manifest+json",
+                            headers={"Cache-Control": "no-cache"})
 
     def spa(no_store: bool = False):
         if not (WEB / "index.html").exists():
