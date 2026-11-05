@@ -241,7 +241,7 @@ export default function ChatPage() {
 
   // 대화 삭제: 내 목록에서만 지운다 (서버는 운영 기록을 남겨 둔다)
   const deleteConversation = async (c: Conversation) => {
-    if (!window.confirm(`'${c.title}' 대화를 목록에서 삭제할까요?\n삭제하면 다시 열 수 없어요.`)) return;
+    if (!window.confirm(`'${c.title}' 대화를 목록에서 삭제할까요?\n이 작업은 되돌릴 수 없습니다.`)) return;
     const res = await fetch(`/api/conversations/${encodeURIComponent(c.id)}`, { method: "DELETE" }).catch(() => null);
     if (!res || !res.ok) { setLoginError("대화를 삭제하지 못했어요. 잠시 후 다시 시도해 주세요."); return; }
     setConvs((all) => (all ? all.filter((x) => x.id !== c.id) : all));
@@ -355,8 +355,8 @@ export default function ChatPage() {
           {messages.length === 0 && (
             <div className="hello">
               <LogoMark size={44} />
-              <h1>{me?.user?.name ? `${me.user.name}님, 무엇이 궁금하세요?` : "무엇이 궁금하세요?"}</h1>
-              <p>학칙·학사일정·학과 공지·학식·캠퍼스 위치를 학교 자료에서 찾아 출처와 함께 답해요.</p>
+              <h1>Danbi에게 물어보세요.</h1>
+              <p>단국대학교 학칙·학사일정·학과 공지·학식·캠퍼스 위치를 학교 자료에서 찾아 출처와 함께 답변합니다.</p>
             </div>
           )}
           {messages.map((m) => (m.role === "user"
@@ -382,9 +382,7 @@ export default function ChatPage() {
           </>}
           <span className="hint-keys">Enter 보내기 · Shift+Enter 줄바꿈</span>
           <span className="hint-sep" aria-hidden="true">·</span>
-          <span>학교 자료를 근거로 답하지만 틀릴 수 있어요. 중요한 일정은 원문을 확인하세요.</span>
-          <span className="hint-sep" aria-hidden="true">·</span>
-          <span>질문 기록은 서비스 개선을 위해 저장돼요.</span>
+          <span>학교 자료를 근거로 답하지만 틀릴 수 있습니다. 중요한 일정은 원문을 확인하세요.</span>
         </div>
       </footer>
       </div>
