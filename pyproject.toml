@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "단국대학교 질의응답 AI 에이전트"
 requires-python = ">=3.11"
 dependencies = [
-    "google-genai>=2.27",
+    "google-genai>=2.27,<3",   # 3.x는 기본 API가 v1이라 gemini-flash-latest가 404 (2026-11-14 운영 장애)
     "chromadb==1.5.0",   # 기존 DB(chroma_db_dd3)를 만든 버전과 같아야 한다
     "pyyaml>=6.0",
     "python-dotenv>=1.0",
