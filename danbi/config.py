@@ -16,7 +16,7 @@ DEFAULT_SETTINGS = PROJECT_ROOT / "config" / "settings.yaml"
 @dataclass
 class LLMSettings:
     provider: str = "gemini"
-    model: str = "gemini-3.8-flash"
+    model: str = "gemini-4-hydrogen"
     temperature: float = 0.0
     max_output_tokens: int = 4096
     options: dict[str, Any] = field(default_factory=dict)
