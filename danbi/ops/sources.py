@@ -20,6 +20,8 @@ _MAP_LINK = re.compile(r"^### (?:[^·\n]+ · )?(.+?)(?: \(별칭: .*\))?\n지도
 # list_sources: '- [검색 지원] id: 이름 (소속)' 줄 아래 들여쓴 '원문:'(연락처를 가져온 단과대학 페이지)·'홈페이지:'
 _DEPT_ROW = re.compile(r"^- \[검색 (?:미)?지원\] ([\w.-]+): (.+?)(?: \(| 별칭:|$)", re.M)
 _DEPT_LINK = re.compile(r"^  (원문|홈페이지): (https?://\S+)", re.M)
+# web_search: '(n) [공식|외부…] 제목 — 호스트 | 날짜: …' 다음 줄 '원문: 주소'
+_WEB_HIT = re.compile(r"^\(\d+\) (\[[^\]\n]+\] .+?) — [^\n]*\n원문: (https?://\S+)", re.M)
 LIST_SOURCES_ROWS = 3   # 목록 전체가 아니라 물은 학과 몇 개만 출처로 (카카오 버튼도 3개까지)
 
 
@@ -54,6 +56,8 @@ def extract_sources(tool_name: str, text: str) -> list[SourceRef]:
         return out
     if tool_name == "list_sources":
         return _dept_links(text)
+    if tool_name == "web_search":  # 제목 앞의 [공식]/[외부] 표시를 그대로 출처 카드에 남긴다
+        return [SourceRef("web", "web_search", m.group(1).strip(), m.group(2)) for m in _WEB_HIT.finditer(text)]
     if tool_name == "my_schedule":  # 개인 일정: 링크는 eclass 캘린더 화면 하나
         return [SourceRef("web", "eclass", "내 eclass 캘린더", line.group(1)) for line in _URL_LINE.finditer(text)][:1]
     title = t.group(1).strip() if (t := _TITLE_LINE.search(text)) else ""

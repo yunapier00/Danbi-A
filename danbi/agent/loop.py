@@ -124,6 +124,7 @@ class Agent:
         deadline = start + self.timeout_seconds
         used = 0
         blocked_rounds = 0
+        per_tool: dict[str, int] = {}   # 질문당 횟수 상한이 있는 도구 (Tool.max_calls_per_run)
         usage = Usage()
 
         def final(text: str, stop: str, error: str | None = None) -> FinalEvent:
@@ -171,10 +172,21 @@ class Agent:
             if len(run_calls) < len(calls):
                 blocked_rounds += 1
 
-            if run_calls:
-                yield ToolStartEvent(run_calls, seq)
-            timed = await self._execute(run_calls, timeout=remaining)
-            used += len(run_calls)
+            ok, capped = [], []
+            for c in run_calls:
+                cap = self.tools.max_calls(c.name)
+                if cap is not None and per_tool.get(c.name, 0) >= cap:
+                    capped.append(c)
+                else:
+                    per_tool[c.name] = per_tool.get(c.name, 0) + 1
+                    ok.append(c)
+
+            if ok:
+                yield ToolStartEvent(ok, seq)
+            timed = await self._execute(ok, timeout=remaining)
+            used += len(run_calls)   # 상한에 막힌 호출도 센다 (같은 도구만 계속 부르는 것을 막는다)
+            now = time.time()
+            timed += [(ToolResult(c.id, c.name, self.tools.cap_message(c.name), True), now, now) for c in capped]
             limit_msg = (
                 f"도구 호출 상한({self.max_tool_calls}회)에 도달했습니다." if remaining > 0
                 else f"시간 상한({self.timeout_seconds:.0f}초)에 도달했습니다."

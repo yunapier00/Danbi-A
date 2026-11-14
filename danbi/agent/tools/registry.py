@@ -28,6 +28,7 @@ class Tool:
     func: Callable[..., Any]  # (**arguments) -> str  (동기 또는 async)
     status: Callable[[dict], str] | None = None  # 인자 → 사용자에게 보여줄 진행 상태 문구
     timeout_hint: str | None = None  # 시간 상한에 걸렸을 때 에이전트에게 덧붙일 안내 (예: 작업은 계속되니 다시 물으라)
+    max_calls_per_run: int | None = None  # 한 질문에서 이 도구를 부를 수 있는 횟수 (비용이 드는 외부 API 등). None = 제한 없음
 
 
 class ToolRegistry:
@@ -47,6 +48,14 @@ class ToolRegistry:
 
     def __len__(self) -> int:
         return len(self._tools)
+
+    def max_calls(self, name: str) -> int | None:
+        tool = self._tools.get(name)
+        return tool.max_calls_per_run if tool else None
+
+    def cap_message(self, name: str) -> str:
+        return (f"{name}은 한 질문에 {self.max_calls(name)}번까지만 쓸 수 있습니다. "
+                "더 검색하지 말고 지금까지 찾은 결과로 답하세요.")
 
     def timeout_message(self, name: str) -> str:
         tool = self._tools.get(name)

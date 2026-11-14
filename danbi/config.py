@@ -165,6 +165,23 @@ class PersonalSettings:
 
 
 @dataclass
+class WebSearchSettings:
+    """외부 웹 검색 (최후의 수단). API 키 환경 변수가 없으면 web_search 도구를 등록하지 않는다."""
+    enabled: bool = True
+    provider: str = "tavily"
+    max_results: int = 5
+    daily_limit: int = 100            # 서비스 전체 하루(한국 시간) 검색 수. 캐시에서 돌려준 검색은 세지 않는다
+    cache_minutes: float = 60         # 같은 검색어 결과 재사용 시간
+    official_domains: list[str] = field(default_factory=lambda: ["dankook.ac.kr"])   # [공식] 표시
+    exclude_domains: list[str] = field(default_factory=list)
+
+    @property
+    def api_key(self) -> str | None:
+        import os
+        return os.environ.get("TAVILY_API_KEY") or None
+
+
+@dataclass
 class AgentSettings:
     max_tool_calls: int = 10
     timeout_seconds: float = 90
@@ -189,6 +206,7 @@ class Settings:
     agent: AgentSettings = field(default_factory=AgentSettings)
     personal: PersonalSettings = field(default_factory=PersonalSettings)
     vision: VisionSettings = field(default_factory=VisionSettings)
+    web_search: WebSearchSettings = field(default_factory=WebSearchSettings)
     enable_docs: bool = False   # /api/docs (DANBI_ENABLE_DOCS=1)
 
 
@@ -231,6 +249,7 @@ def load_settings(path: str | Path | None = None) -> Settings:
         agent=AgentSettings(**(raw.get("agent") or {})),
         personal=PersonalSettings(**(raw.get("personal") or {})),
         vision=VisionSettings(**(raw.get("vision") or {})),
+        web_search=WebSearchSettings(**(raw.get("web_search") or {})),
     )
     _apply_env(settings)
     return settings

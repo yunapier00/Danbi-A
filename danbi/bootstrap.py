@@ -27,10 +27,33 @@ def build_tools(settings: Settings, eclass=None) -> ToolRegistry:
     else:
         registry.register(make_search_knowledge(store, GeminiEmbedder(settings.embedding), settings.rag.top_k))
 
-    for tool in build_site_tools(settings).tools():
+    site = build_site_tools(settings)
+    for tool in site.tools():
         registry.register(tool)
     registry.register(make_my_schedule(eclass))
+    if (web := build_web_search(settings, site.cache)) is not None:
+        from .agent.tools.web import make_web_search
+
+        registry.register(make_web_search(web, settings.web_search.official_domains))
     return registry
+
+
+def build_web_search(settings: Settings, cache):
+    """외부 웹 검색. 꺼져 있거나 API 키가 없으면 None (도구 정의는 배포 단위로 고정되므로 캐시에 문제없다)."""
+    from .websearch import TavilyBackend, WebSearch
+
+    w = settings.web_search
+    if not w.enabled:
+        return None
+    if w.provider != "tavily":
+        log.warning("웹 검색 꺼짐: 지원하지 않는 provider %s", w.provider)
+        return None
+    if not w.api_key:
+        log.info("웹 검색 꺼짐: TAVILY_API_KEY 없음")
+        return None
+    backend = TavilyBackend(w.api_key, exclude_domains=w.exclude_domains)
+    return WebSearch(backend, cache, max_results=w.max_results, daily_limit=w.daily_limit,
+                     cache_minutes=w.cache_minutes)
 
 
 def build_eclass(settings: Settings, store):

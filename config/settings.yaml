@@ -131,3 +131,12 @@ personal:                     # 사용자 개인 자료 연동 — 저장 주소
 vision:                       # 공지 본문 이미지(포스터)·스캔 PDF 판독 — llm 설정의 모델로 읽고 이미지 주소 기준 1년 캐시
   enabled: true
   auto_images: 2              # 본문이 이미지뿐인 글은 get_item이 앞쪽 2장을 바로 판독 (나머지는 read_attachment)
+
+web_search:                   # 외부 웹 검색 (web_search 도구, 최후의 수단). TAVILY_API_KEY 환경 변수가 없으면 꺼짐
+  enabled: true
+  provider: tavily            # Gemini 검색 grounding은 약관(결과 수정·혼합·저장 금지) 때문에 쓰지 않는다 (danbi/websearch.py)
+  max_results: 5
+  daily_limit: 100            # 서비스 전체 하루 검색 수 (Tavily 무료 = 월 1,000회). 캐시 재사용은 세지 않는다
+  cache_minutes: 60           # 같은 검색어 결과 재사용
+  official_domains: [dankook.ac.kr]   # 이 도메인(하위 포함) 결과는 [공식], 나머지는 [외부]
+  exclude_domains: []

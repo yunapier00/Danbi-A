@@ -9,7 +9,7 @@ from __future__ import annotations
 import html
 import os
 
-EFFECTIVE_DATE = "2026년 11월 4일"
+EFFECTIVE_DATE = "2026년 11월 14일"
 
 _STYLE = """
 body{margin:0;background:#f8fafc;color:#0f172a;font:15px/1.7 system-ui,-apple-system,"Segoe UI","Malgun Gothic",sans-serif}
@@ -68,6 +68,7 @@ def render_privacy() -> str:
 <table>
 <tr><th>받는 곳</th><th>업무</th><th>이전 국가·방법</th></tr>
 <tr><td>Google LLC</td><td>Google 로그인 인증, 질문에 대한 답변 생성(Gemini API, eclass 일정을 물으면 해당 일정 포함)과 문서 검색용 임베딩</td><td>미국 등 · 이용 시마다 네트워크로 전송</td></tr>
+<tr><td>Tavily</td><td>학교 자료에서 답을 찾지 못했을 때의 웹 검색 (질문에서 만든 검색어만 전송, 계정 정보는 보내지 않음)</td><td>미국 · 웹 검색 시마다 네트워크로 전송</td></tr>
 <tr><td>Railway Corp.</td><td>서버 운영과 데이터 저장</td><td>미국 · 서비스 운영 기간 동안 저장</td></tr>
 <tr><td>(주)카카오</td><td>카카오톡 채널 메시지 송수신</td><td>대한민국 · 카카오톡 이용 시</td></tr>
 </table>
