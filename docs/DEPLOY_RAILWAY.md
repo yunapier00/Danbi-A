@@ -1,11 +1,21 @@
 # Railway 배포 가이드
 
-Dockerfile로 빌드합니다(`railway.json`). 이미지 하나에 React 화면과 Python 서버가 함께 들어가고, RAG DB(`chroma_db_dd3/`)도 이미지에 포함됩니다.
+Dockerfile로 빌드합니다. 빌드·실행 설정은 Railway 대시보드(서비스 Settings)에 있습니다 (`railway.json`은 Railway가 2026-12-01부터 읽지 않아 2026-11-14에 지움). 이미지 하나에 React 화면과 Python 서버가 함께 들어가고, RAG DB(`chroma_db_dd3/`)도 이미지에 포함됩니다.
 
 ## 1. 준비
 
 1. 저장소를 GitHub에 올립니다. `chroma_db_dd3/`(약 51MB, 가장 큰 파일 27MB)는 일반 커밋으로 올라갑니다(LFS 불필요).
-2. Railway에서 **New Project → Deploy from GitHub repo**로 저장소를 고릅니다. `railway.json`이 있어서 Dockerfile 빌드가 자동으로 선택됩니다.
+2. Railway에서 **New Project → Deploy from GitHub repo**로 저장소를 고릅니다. 루트의 `Dockerfile`로 빌드됩니다.
+   서비스 Settings에서 아래 값을 맞춥니다 (2026-11-14 운영 서비스에 적용한 값):
+
+   | 항목 | 값 | 이유 |
+   |---|---|---|
+   | Dockerfile Path | `Dockerfile` | 두 단계 빌드 (React → Python) |
+   | Replicas | 1 | 세션·제한·SQLite가 한 서버 안에 있다. 늘리면 안 됨 |
+   | Healthcheck Path / Timeout | `/api/health` / 120초 | 새 버전이 뜬 것을 확인한 뒤 교체 (RAG 로딩에 시간이 걸림) |
+   | Restart Policy | On Failure, 최대 5회 | 서버가 죽으면 자동 재시작 |
+
+   CLI로 확인: `railway api 'query { serviceInstance(environmentId: "<환경 ID>", serviceId: "<서비스 ID>") { dockerfilePath healthcheckPath healthcheckTimeout numReplicas restartPolicyType restartPolicyMaxRetries } }'` (ID는 `railway status`, `railway service list --json`)
 3. **리전**: Settings → Region에서 아시아(예: Singapore)를 고릅니다. 학교 사이트와 사용자가 한국에 있어 응답이 빨라집니다.
 
 ## 2. 볼륨 (필수)

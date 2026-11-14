@@ -1,6 +1,6 @@
 llm:
   provider: gemini            # gemini | claude | openai
-  model: gemini-flash-latest
+  model: gemini-3.8-flash      # 별칭(gemini-flash-latest) 대신 고정 (2026-11-14). 바꿀 때는 evals.run으로 비교 후
   temperature: 0
   max_output_tokens: 4096
   options:                    # 공급자 전용 옵션. 지원하지 않는 공급자에서는 무시된다
