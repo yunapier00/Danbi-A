@@ -12,6 +12,9 @@ export const MenuIcon = ({ size = 18 }: { size?: number }) => (
 export const ChevronIcon = ({ size = 14, open = false }: { size?: number; open?: boolean }) => (
   <svg {...base(size)} style={{ transform: open ? "rotate(180deg)" : undefined, transition: "transform .15s" }}><path d="m6 9 6 6 6-6" /></svg>
 );
+export const BellIcon = ({ size = 15 }: { size?: number }) => (
+  <svg {...base(size)}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
+);
 export const CalendarIcon = ({ size = 15 }: { size?: number }) => (
   <svg {...base(size)}><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4" /><path d="M8 3v4" /><path d="M3 10h18" /></svg>
 );

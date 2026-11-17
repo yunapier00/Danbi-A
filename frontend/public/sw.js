@@ -2,6 +2,7 @@
 // - 화면(index.html)은 늘 서버에서 받는다 → 배포하면 바로 새 화면이 뜬다. 연결이 끊겼을 때만 안내 화면.
 // - /assets/* 는 파일 이름에 내용 해시가 붙어 있어 한 번 받으면 바뀌지 않으므로 캐시해서 다시 쓴다.
 // - /api/* (채팅·로그인·대화 기록)와 그 밖의 요청은 건드리지 않는다. 개인 데이터는 캐시에 남지 않는다.
+// - 답변 완료 웹 푸시: 화면을 떠난 사이 답변이 끝나면 서버가 보낸 알림을 띄우고, 누르면 그 대화를 연다.
 // 서비스 워커를 없애야 할 때는 이 파일을 self.registration.unregister()만 하는 내용으로 바꿔 배포하면 된다.
 const ASSETS = "danbi-assets-v1";
 const MAX_ASSETS = 200; // 글꼴 조각(Pretendard 부분 글꼴)이 많아 넉넉히. 배포가 쌓여도 옛 파일이 끝없이 늘지는 않게
@@ -57,3 +58,35 @@ async function cacheFirst(req) {
   }
   return res;
 }
+
+// ---- 답변 완료 알림 ----
+// 서버는 화면을 떠났거나 연결이 끊긴 경우에만 보낸다. 푸시를 받으면 반드시 알림을 띄운다
+// (iPhone은 알림 없이 받은 푸시가 쌓이면 구독을 끊는다).
+self.addEventListener("push", (event) => {
+  let d = {};
+  try { d = event.data ? event.data.json() : {}; } catch { d = {}; }
+  const title = typeof d.title === "string" ? d.title : "단비";
+  const conv = typeof d.conversation_id === "string" ? d.conversation_id : "";
+  event.waitUntil(self.registration.showNotification(title, {
+    body: typeof d.body === "string" ? d.body : "",
+    icon: "/icons/icon-192.png",
+    tag: conv ? `danbi-${conv}` : "danbi",   // 같은 대화의 알림은 하나로 바꿔 쓴다
+    data: { conversation_id: conv },
+  }));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const conv = event.notification.data && event.notification.data.conversation_id;
+  const url = conv ? `/?c=${encodeURIComponent(conv)}` : "/";
+  event.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const win = wins.find((w) => new URL(w.url).origin === self.location.origin && new URL(w.url).pathname === "/");
+    if (win) {
+      await win.focus();
+      if (conv) win.postMessage({ type: "open-conversation", conversation_id: conv });
+      return;
+    }
+    await self.clients.openWindow(url);
+  })());
+});

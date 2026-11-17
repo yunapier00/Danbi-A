@@ -13,6 +13,8 @@ POST /api/chat  {"message": "...", "session_id": "...(선택)"}  → text/event-
 POST /api/reset {"session_id"}                     대화 기록 삭제
 POST /api/feedback {"run_id", "rating": 1|-1, "comment"}   답변 평가 (추적 DB에 저장)
 GET|PUT|DELETE /api/integrations/eclass            eclass 캘린더 피드 연결 상태·등록({"url"})·해제 (웹 로그인 사용자)
+GET|PUT|DELETE /api/push                           답변 완료 웹 푸시: 공개키·구독({"endpoint","keys"})·해제({"endpoint"})
+POST /api/chat/visibility {"run_id", "hidden"}     답변 중 화면을 떠났는지/돌아왔는지 (떠나 있으면 끝날 때 푸시)
 GET  /dev                                          개발자 전용 LLMOps 페이지 (admin.py)
 """
 
@@ -45,6 +47,7 @@ from ..ops.sources import extract_sources
 from ..personal.context import CURRENT_USER, CurrentUser
 from ..personal.eclass import EclassError, EclassService
 from ..personal.ics import KST as _KST
+from ..personal.push import PushError, PushService
 from .admin import mount_admin
 from .auth import Auth, mount_auth
 from .privacy import render_privacy
@@ -66,6 +69,37 @@ BUSY_TIMEOUT = 180  # 이보다 오래 '답변 중'이면 끊긴 요청으로 �
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=MAX_MESSAGE_CHARS)
     session_id: str | None = Field(default=None, max_length=64)
+    push_endpoint: str | None = Field(default=None, max_length=1000)  # 이 기기의 웹 푸시 구독 (알림을 켰을 때)
+
+
+class PushKeys(BaseModel):
+    p256dh: str = Field(min_length=20, max_length=200)
+    auth: str = Field(min_length=8, max_length=100)
+
+
+class PushSubscribeRequest(BaseModel):
+    endpoint: str = Field(min_length=10, max_length=1000)
+    keys: PushKeys
+
+
+class PushUnsubscribeRequest(BaseModel):
+    endpoint: str = Field(min_length=10, max_length=1000)
+
+
+class VisibilityRequest(BaseModel):
+    run_id: str = Field(min_length=1, max_length=64)
+    hidden: bool
+
+
+@dataclass
+class PushWatch:
+    """답변 중인 실행 하나의 알림 조건. 화면을 떠났거나 연결이 끊긴 채로 답변이 끝나면 알림을 보낸다."""
+    user_id: int
+    endpoint: str
+    question: str
+    conversation_id: str
+    hidden: bool = False
+    disconnected: bool = False
 
 
 class ResetRequest(BaseModel):
@@ -281,6 +315,16 @@ def _sse(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
+def _answered(last_chunk: str) -> bool:
+    """마지막 SSE 조각이 정상 답변의 done인가 (오류·한도 초과의 대체 답변도 done으로 끝나므로 stop_reason을 본다)."""
+    if not last_chunk.startswith("event: done"):
+        return False
+    try:
+        return json.loads(last_chunk.split("data: ", 1)[1])["stop_reason"] == "end"
+    except (IndexError, KeyError, ValueError):
+        return False
+
+
 def client_ip(request: Request, trust_proxy: bool = False, hops: int = 1) -> str:
     """요청 IP. 프록시 헤더는 trust_proxy일 때만 믿는다 (아니면 누구나 위조할 수 있다).
 
@@ -300,12 +344,13 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
                proxy_hops: int = 1, limits: LimitSettings | None = None, enable_docs: bool = False,
                kakao: KakaoSettings | None = None, kakao_http=None, auth: AuthSettings | None = None,
                auth_http=None, auth_verifier=None, public_url: str | None = None, memory: bool = True,
-               eclass: EclassService | None = None) -> FastAPI:
+               eclass: EclassService | None = None, push: PushService | None = None) -> FastAPI:
     """recorder를 주면 모든 대화를 추적 DB에 기록하고 개발자 페이지(/dev)를 연다.
     auth를 주면 Google 로그인을 쓰고, auth.allow_anonymous가 꺼져 있으면 웹 채팅에 로그인이 필요하다.
     auth가 없으면(테스트·로컬) 예전처럼 로그인 없이 IP 기준으로 쓴다.
     memory=False면 같은 대화의 이전 질문·답변을 LLM에 보내지 않는다 (질문마다 따로 답한다, 기록은 그대로 저장).
-    eclass를 주면 로그인 사용자가 자기 eclass 캘린더 피드를 연결할 수 있다 (my_schedule 도구가 읽는다)."""
+    eclass를 주면 로그인 사용자가 자기 eclass 캘린더 피드를 연결할 수 있다 (my_schedule 도구가 읽는다).
+    push를 주면(키가 설정돼 있으면) 화면을 떠난 사이 답변이 끝났을 때 질문한 기기로 웹 푸시를 보낸다."""
     app = FastAPI(title="단비 API", docs_url="/api/docs" if enable_docs else None,
                   openapi_url="/api/openapi.json" if enable_docs else None, redoc_url=None)
     limits = limits or LimitSettings()
@@ -485,6 +530,47 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
             eclass.disconnect(user["id"])
         return {"ok": True}
 
+    push_on = push is not None and push.enabled
+    watches: dict[str, PushWatch] = {}   # run_id → 답변 중인 실행의 알림 조건 (답변이 끝나면 지운다)
+
+    @app.get("/api/push")
+    def push_status(request: Request):
+        logged_in(request)
+        return {"available": push_on, "public_key": push.public_key if push_on else None}
+
+    @app.put("/api/push")
+    def push_subscribe(req: PushSubscribeRequest, request: Request):
+        user, _ = logged_in(request)
+        if not push_on:
+            raise HTTPException(503, "이 서버에서는 알림 기능이 꺼져 있어요.")
+        try:
+            push.subscribe(int(user["id"]), req.endpoint, req.keys.p256dh, req.keys.auth)
+        except PushError as e:
+            raise HTTPException(400, str(e))
+        return {"ok": True}
+
+    @app.delete("/api/push")
+    def push_unsubscribe(req: PushUnsubscribeRequest, request: Request):
+        user, _ = logged_in(request)
+        if push is not None:
+            push.unsubscribe(int(user["id"]), req.endpoint)
+        return {"ok": True}
+
+    @app.post("/api/chat/visibility")
+    def chat_visibility(req: VisibilityRequest, request: Request):
+        user, _, _, _ = identity(request)
+        w = watches.get(req.run_id)
+        if w is not None and user is not None and w.user_id == int(user["id"]):
+            w.hidden = req.hidden
+        return {"ok": True}   # 이미 끝났거나 알림을 안 쓰는 실행이어도 조용히 넘어간다
+
+    async def notify(w: PushWatch, ok: bool) -> None:
+        title = "단비 답변이 준비됐어요" if ok else "단비가 답변을 만들지 못했어요"
+        q = " ".join(w.question.split())
+        body = q if len(q) <= 60 else q[:59] + "…"
+        await asyncio.to_thread(push.send, w.user_id, w.endpoint,
+                                {"title": title, "body": body, "conversation_id": w.conversation_id})
+
     @app.post("/api/chat")
     async def chat(req: ChatRequest, request: Request):
         user, client, ip, ukey = identity(request)
@@ -513,13 +599,17 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
             raise HTTPException(409, "이전 질문에 아직 답하는 중입니다.")
         session.busy_since = time.monotonic()  # 응답 생성 전에 표시해야 동시 요청을 막을 수 있다
         me = CurrentUser(int(user["id"]), ukey) if user is not None else None
-        return StreamingResponse(_stream(sid, session, req.message.strip(), ip, ukey, remaining, me, run_id, credits),
+        watch = None
+        if push_on and user is not None and req.push_endpoint and push.owns(int(user["id"]), req.push_endpoint):
+            watch = PushWatch(int(user["id"]), req.push_endpoint, req.message.strip(), sid)
+        return StreamingResponse(_stream(sid, session, req.message.strip(), ip, ukey, remaining, me, run_id, credits,
+                                         watch),
                                  media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
     async def _stream(sid: str, session: Session, message: str, ip: str | None, ukey: str | None,
                       remaining: int | None = None, me: CurrentUser | None = None, run_id: str | None = None,
-                      credits: int = 0) -> AsyncIterator[str]:
+                      credits: int = 0, watch: PushWatch | None = None) -> AsyncIterator[str]:
         run_id = run_id or new_run_id()
         # 동시 처리 상한: 슬롯이 없으면 기다리지 않고 바로 알린다 (응답이 시작된 뒤에 잡아야 슬롯이 새지 않는다)
         if slots.locked():
@@ -533,18 +623,36 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
         queue: asyncio.Queue[str | None] = asyncio.Queue()
 
         async def produce() -> None:
+            last = ""
             try:
                 async with slots:
                     async for chunk in _answer(sid, session, message, ip, ukey, remaining, me, run_id, credits):
+                        last = chunk
                         queue.put_nowait(chunk)
             finally:
                 queue.put_nowait(None)
+                if watch is not None:
+                    watches.pop(run_id, None)
+            # 화면을 떠나 있거나 연결이 끊긴 채로 끝났으면 질문한 기기에 알린다 (서버 종료로 취소되면 여기 오지 않는다)
+            if watch is not None and (watch.hidden or watch.disconnected):
+                try:
+                    await notify(watch, ok=_answered(last))
+                except Exception:  # noqa: BLE001 - 알림 실패가 답변 기록을 해치지 않게
+                    log.exception("답변 알림 실패")
 
+        if watch is not None:
+            watches[run_id] = watch
         task = asyncio.create_task(produce())
         answer_tasks.add(task)   # 응답 스트림이 닫혀도 태스크가 회수되지 않게 참조를 잡아 둔다
         task.add_done_callback(answer_tasks.discard)
-        while (chunk := await queue.get()) is not None:
-            yield chunk
+        finished = False
+        try:
+            while (chunk := await queue.get()) is not None:
+                yield chunk
+            finished = True
+        finally:
+            if not finished and watch is not None:
+                watch.disconnected = True
 
     async def _answer(sid: str, session: Session, message: str, ip: str | None, ukey: str | None,
                       remaining: int | None, me: CurrentUser | None, run_id: str, credits: int) -> AsyncIterator[str]:
@@ -612,4 +720,4 @@ def build_default_app() -> FastAPI:
                       store_client_ip=settings.ops.store_client_ip, trust_proxy=settings.ops.trust_proxy_headers,
                       proxy_hops=settings.ops.proxy_hops, limits=settings.limits, enable_docs=settings.enable_docs,
                       kakao=settings.kakao, auth=settings.auth, public_url=settings.auth.public_url,
-                      memory=settings.agent.memory, eclass=eclass)
+                      memory=settings.agent.memory, eclass=eclass, push=PushService.from_env(store))

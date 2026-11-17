@@ -19,8 +19,9 @@ import threading
 import time
 from pathlib import Path
 
-SCHEMA_VERSION = 7  # 2: runs.client_ip, 3: runs.user_key, 4: users·auth_sessions (Google 로그인), 5: user_integrations,
-                    # 6: user_grants·credit_ledger (질문 이용권), 7: conversations.hidden_at (사용자가 목록에서 삭제)
+SCHEMA_VERSION = 8  # 2: runs.client_ip, 3: runs.user_key, 4: users·auth_sessions (Google 로그인), 5: user_integrations,
+                    # 6: user_grants·credit_ledger (질문 이용권), 7: conversations.hidden_at (사용자가 목록에서 삭제),
+                    # 8: push_subscriptions (답변 완료 웹 푸시)
 MAX_TEXT = 50_000  # 도구 결과·답변 저장 상한 (감사용으로 거의 전부 남긴다)
 
 SCHEMA = """
@@ -157,6 +158,14 @@ CREATE TABLE IF NOT EXISTS user_integrations (     -- 사용자 개인 자료 �
     last_error    TEXT,
     PRIMARY KEY (user_id, kind)
 );
+CREATE TABLE IF NOT EXISTS push_subscriptions (    -- 웹 푸시 구독 (브라우저·기기마다 하나). 답변 완료 알림용
+    endpoint      TEXT PRIMARY KEY,                 -- 브라우저 푸시 서비스 주소 (FCM·Apple·Mozilla·WNS)
+    user_id       INTEGER NOT NULL REFERENCES users(id),
+    p256dh        TEXT NOT NULL,                    -- 알림 내용 암호화용 브라우저 공개키
+    auth          TEXT NOT NULL,
+    created_at    REAL NOT NULL,
+    last_ok_at    REAL
+);
 CREATE TABLE IF NOT EXISTS user_grants (           -- 질문 이용권: 운영자 지정(지금) 또는 결제(나중)
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     email         TEXT NOT NULL,                    -- 받는 사람 (소문자). 로그인 전에도 줄 수 있어 이메일로 찾는다
@@ -180,6 +189,7 @@ CREATE TABLE IF NOT EXISTS credit_ledger (         -- credits 이용권 차감 �
     at            REAL NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_grants_email ON user_grants(email);
+CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions(user_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_ledger_grant ON credit_ledger(grant_id);
 CREATE INDEX IF NOT EXISTS idx_ledger_run ON credit_ledger(run_id);
 CREATE INDEX IF NOT EXISTS idx_runs_started ON runs(started_at);
@@ -633,6 +643,33 @@ class TraceStore:
 
     def delete_integration(self, user_id: int, kind: str) -> None:
         self._exec("DELETE FROM user_integrations WHERE user_id = ? AND kind = ?", (user_id, kind))
+
+    def save_push(self, user_id: int, endpoint: str, p256dh: str, auth: str, *, max_per_user: int = 10) -> None:
+        """구독을 저장한다. 같은 기기에서 다른 계정으로 로그인해 구독하면 그 계정으로 옮긴다.
+        사용자당 max_per_user개를 넘으면 오래된 것부터 지운다."""
+        with self._lock:
+            self._db.execute(
+                "INSERT INTO push_subscriptions (endpoint, user_id, p256dh, auth, created_at) VALUES (?, ?, ?, ?, ?) "
+                "ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, p256dh = excluded.p256dh, "
+                "auth = excluded.auth, created_at = excluded.created_at, last_ok_at = NULL",
+                (endpoint, user_id, p256dh, auth, time.time()))
+            self._db.execute(
+                "DELETE FROM push_subscriptions WHERE user_id = ? AND endpoint NOT IN "
+                "(SELECT endpoint FROM push_subscriptions WHERE user_id = ? ORDER BY created_at DESC LIMIT ?)",
+                (user_id, user_id, max_per_user))
+            self._db.commit()
+
+    def get_push(self, endpoint: str) -> dict | None:
+        return self._one("SELECT * FROM push_subscriptions WHERE endpoint = ?", (endpoint,))
+
+    def mark_push_ok(self, endpoint: str) -> None:
+        self._exec("UPDATE push_subscriptions SET last_ok_at = ? WHERE endpoint = ?", (time.time(), endpoint))
+
+    def delete_push(self, endpoint: str, user_id: int | None = None) -> None:
+        if user_id is None:
+            self._exec("DELETE FROM push_subscriptions WHERE endpoint = ?", (endpoint,))
+        else:
+            self._exec("DELETE FROM push_subscriptions WHERE endpoint = ? AND user_id = ?", (endpoint, user_id))
 
     def user_conversations(self, user_key: str, *, channel: str = "web", limit: int = 50) -> list[dict]:
         """사용자의 대화 목록 (최근에 이어 쓴 순). 제목은 첫 질문."""

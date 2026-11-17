@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import {
-  AlertIcon, CalendarIcon, ChatIcon, CheckIcon, ChevronIcon, ClockIcon, CloseIcon, ExternalIcon, LinkIcon, MenuIcon, PlusIcon,
+  AlertIcon, BellIcon, CalendarIcon, ChatIcon, CheckIcon, ChevronIcon, ClockIcon, CloseIcon, ExternalIcon, LinkIcon, MenuIcon, PlusIcon,
   SearchIcon, SendIcon, ThumbDownIcon, ThumbUpIcon, TrashIcon,
 } from "../components/icons";
 import { GoogleButton, LOGIN_ERRORS } from "../components/GoogleButton";
@@ -8,6 +8,9 @@ import { Logo, LogoMark } from "../components/Logo";
 import { Markdown } from "../lib/markdown";
 import { readSSE } from "../lib/sse";
 import { EclassDialog, fetchEclassStatus, type EclassStatus } from "./EclassDialog";
+import {
+  currentEndpoint, disablePush, enablePush, fetchPushKey, pushState, reportVisibility, syncPush, type PushState,
+} from "./push";
 import "./chat.css";
 
 interface Source { title: string; url: string }
@@ -95,6 +98,8 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  busyRef.current = busy;
   const [remaining, setRemaining] = useState<number | null>(null);  // 남은 질문 수 (서버가 done에 실어 보냄)
   const [credits, setCredits] = useState(0);                          // 그중 추가 이용권 (하루 한도를 다 쓴 뒤 쓰는 몫)
   const [me, setMe] = useState<Me | null>(null);
@@ -104,6 +109,9 @@ export default function ChatPage() {
   const [drawer, setDrawer] = useState(false);                        // 모바일 사이드바
   const [eclass, setEclass] = useState<EclassStatus | null>(null);     // eclass 캘린더 연결 상태
   const [eclassOpen, setEclassOpen] = useState(false);
+  const [pushKey, setPushKey] = useState<string | null>(null);         // 서버가 알림을 지원하면 공개키
+  const [push, setPush] = useState<PushState>("unsupported");          // 이 기기의 답변 알림 상태
+  const [pushBusy, setPushBusy] = useState(false);
   const sessionId = useRef<string | null>(storage.get());
   const scroller = useRef<HTMLElement>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
@@ -153,9 +161,53 @@ export default function ChatPage() {
     if (!loggedIn) { setConvs(null); setEclass(null); return; }
     loadConversations();
     void fetchEclassStatus().then(setEclass);
-    const last = storage.get();
+    void fetchPushKey().then(async (key) => {
+      setPushKey(key);
+      if (!key) return;
+      const state = await pushState();
+      setPush(state);
+      if (state === "on") await syncPush();
+    });
+    // 알림을 눌러 열린 경우 (/?c=대화ID): 그 대화를 연다
+    const params = new URLSearchParams(location.search);
+    const linked = params.get("c");
+    if (linked) {
+      params.delete("c");
+      history.replaceState(null, "", location.pathname + (params.size ? `?${params}` : "") + location.hash);
+    }
+    const last = linked || storage.get();
     if (last) void openConversation(last, true);
   }, [loggedIn, loadConversations, openConversation]);
+
+  // 이미 열려 있는 화면에서 알림을 누르면 서비스 워커가 대화 ID를 보내 준다
+  useEffect(() => {
+    if (!loggedIn || !("serviceWorker" in navigator)) return;
+    const on = (e: MessageEvent) => {
+      const d = e.data as { type?: string; conversation_id?: string } | null;
+      if (d?.type === "open-conversation" && d.conversation_id && !busyRef.current) {
+        void openConversation(d.conversation_id);
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", on);
+    return () => navigator.serviceWorker.removeEventListener("message", on);
+  }, [loggedIn, openConversation]);
+
+  const togglePush = async () => {
+    if (!pushKey || pushBusy) return;
+    if (push === "blocked") {
+      setLoginError("브라우저에서 단비 알림이 차단돼 있어요. 브라우저(또는 휴대폰) 설정에서 알림을 허용해 주세요.");
+      return;
+    }
+    setPushBusy(true);
+    try {
+      setPush(push === "on" ? await disablePush() : await enablePush(pushKey));
+    } catch (e) {
+      setLoginError(e instanceof Error ? e.message : "알림 설정을 바꾸지 못했어요.");
+      setPush(await pushState());
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   const updateBot = (id: number, patch: (m: BotMessage) => Partial<BotMessage>) =>
     setMessages((all) => all.map((m) => (m.id === id && m.role === "bot" ? { ...m, ...patch(m) } : m)));
@@ -190,6 +242,10 @@ export default function ChatPage() {
     setBusy(true);
     let runId: string | null = null;   // 서버가 session 이벤트로 알려 준 이번 답변의 ID
     let streaming = false;             // 응답 스트림을 받기 시작했는가 (그 뒤의 실패는 연결 끊김)
+    // 답변 중 화면을 떠나면 서버에 알린다 → 떠나 있는 채로 끝나면 이 기기로 알림 (알림을 켠 경우)
+    const pushEndpoint = push === "on" ? await currentEndpoint() : null;
+    const onVisibility = () => { if (runId) reportVisibility(runId, document.visibilityState === "hidden"); };
+    if (pushEndpoint) document.addEventListener("visibilitychange", onVisibility);
     const botId = nextId + 1;
     setMessages((all) => [
       ...all,
@@ -201,7 +257,7 @@ export default function ChatPage() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, session_id: sessionId.current }),
+        body: JSON.stringify({ message: text, session_id: sessionId.current, push_endpoint: pushEndpoint }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -214,6 +270,7 @@ export default function ChatPage() {
         const d = data as Record<string, unknown>;
         if (event === "session") {
           if (typeof d.run_id === "string") runId = d.run_id;
+          if (pushEndpoint && document.visibilityState === "hidden") onVisibility();  // 보내자마자 내렸으면
           sessionId.current = String(d.session_id);
           storage.set(sessionId.current);
           setActiveId(sessionId.current);
@@ -252,11 +309,12 @@ export default function ChatPage() {
         }));
       }
     } finally {
+      document.removeEventListener("visibilitychange", onVisibility);
       updateBot(botId, () => ({ status: null }));
       setBusy(false);
       textarea.current?.focus();
     }
-  }, [busy, loggedIn, loadConversations, recover]);
+  }, [busy, loggedIn, loadConversations, recover, push]);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -390,8 +448,19 @@ export default function ChatPage() {
                 ))}
               </ul>
             )}
-            {eclass?.available && (
+            {(eclass?.available || (pushKey && push !== "unsupported")) && (
               <div className="sidebar-foot">
+                {pushKey && push !== "unsupported" && (
+                  <button type="button" className="eclass-btn" onClick={() => void togglePush()} disabled={pushBusy}
+                          aria-pressed={push === "on"} title="화면을 떠난 사이 답변이 끝나면 이 기기로 알려 드려요">
+                    <BellIcon />
+                    <span className="conv-title">답변 알림</span>
+                    <span className={push === "on" ? "eclass-state on" : push === "blocked" ? "eclass-state warn" : "eclass-state"}>
+                      {push === "on" ? "켜짐" : push === "blocked" ? "차단됨" : "꺼짐"}
+                    </span>
+                  </button>
+                )}
+                {eclass?.available && (
                 <button type="button" className="eclass-btn" onClick={() => { setEclassOpen(true); setDrawer(false); }}>
                   <CalendarIcon />
                   <span className="conv-title">eclass 일정 연결</span>
@@ -399,6 +468,7 @@ export default function ChatPage() {
                     {eclass.connected ? (eclass.last_error ? "확인 필요" : "연결됨") : "연결 안 됨"}
                   </span>
                 </button>
+                )}
               </div>
             )}
           </aside>

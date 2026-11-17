@@ -115,6 +115,8 @@
   box-shadow: var(--shadow-sm); transition: background .15s;
 }
 .chat-root .eclass-btn:hover { background: var(--navy-soft); }
+.chat-root .eclass-btn + .eclass-btn { margin-top: 8px; }
+.chat-root .eclass-btn:disabled { opacity: .6; cursor: default; }
 .chat-root .eclass-btn svg { color: var(--navy-3); }
 .chat-root .eclass-state { font-size: 12px; color: var(--muted); font-weight: 500; white-space: nowrap; }
 .chat-root .eclass-state.on { color: var(--ok); font-weight: 700; }
