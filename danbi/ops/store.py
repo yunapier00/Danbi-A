@@ -671,6 +671,12 @@ class TraceStore:
         else:
             self._exec("DELETE FROM push_subscriptions WHERE endpoint = ? AND user_id = ?", (endpoint, user_id))
 
+    def latest_user_run(self, user_key: str, *, since: float, channel: str = "web") -> dict | None:
+        """이 사용자의 가장 최근 실행 (since 이후). 첫 응답을 받기 전에 연결이 끊긴 화면이 질문이 도착했는지 확인할 때 쓴다."""
+        return self._one("SELECT id, conversation_id, question, status, started_at FROM runs "
+                         "WHERE user_key = ? AND channel = ? AND started_at >= ? ORDER BY started_at DESC LIMIT 1",
+                         (user_key, channel, since))
+
     def user_conversations(self, user_key: str, *, channel: str = "web", limit: int = 50) -> list[dict]:
         """사용자의 대화 목록 (최근에 이어 쓴 순). 제목은 첫 질문."""
         return self._all(

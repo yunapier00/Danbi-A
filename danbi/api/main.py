@@ -13,6 +13,7 @@ POST /api/chat  {"message": "...", "session_id": "...(선택)"}  → text/event-
 POST /api/reset {"session_id"}                     대화 기록 삭제
 POST /api/feedback {"run_id", "rating": 1|-1, "comment"}   답변 평가 (추적 DB에 저장)
 GET|PUT|DELETE /api/integrations/eclass            eclass 캘린더 피드 연결 상태·등록({"url"})·해제 (웹 로그인 사용자)
+GET  /api/chat/recent                              최근 10분 안의 내 마지막 질문 {"run": {id, conversation_id, question, status}|null}
 GET|PUT|DELETE /api/push                           답변 완료 웹 푸시: 공개키·구독({"endpoint","keys"})·해제({"endpoint"})
 POST /api/chat/visibility {"run_id", "hidden"}     답변 중 화면을 떠났는지/돌아왔는지 (떠나 있으면 끝날 때 푸시)
 GET  /dev                                          개발자 전용 LLMOps 페이지 (admin.py)
@@ -490,6 +491,13 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
             raise HTTPException(404, "대화를 찾을 수 없습니다.")
         sessions.reset(conversation_id[:64])
         return {"ok": True}
+
+    @app.get("/api/chat/recent")
+    def chat_recent(request: Request):
+        """최근 10분 안의 내 마지막 질문. 질문을 보내자마자 앱을 내려 첫 응답(session)을 못 받은 화면이
+        돌아와서 그 질문이 서버에 도착했는지(→ 답변을 불러온다), 아닌지(→ 다시 보낸다) 판단한다."""
+        _, ukey = logged_in(request)
+        return {"run": recorder.store.latest_user_run(ukey, since=time.time() - 600)}
 
     @app.get("/api/conversations/{conversation_id}")
     def conversation(conversation_id: str, request: Request):

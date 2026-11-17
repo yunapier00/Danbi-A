@@ -54,6 +54,8 @@ let nextId = 1;
 const RECOVER_LIMIT_MS = 180_000;
 const RECOVER_START_MS = 30_000;   // 이 시간이 지나도 기록에 실행이 없으면 포기
 const RECOVER_POLL_MS = 3_000;
+const ARRIVE_CHECKS = 4;          // 첫 응답 전에 끊겼을 때 질문 도착 여부를 확인하는 횟수
+const ARRIVE_POLL_MS = 1_500;
 
 /** 화면이 보일 때까지 기다린다 (백그라운드에서는 요청이 막히거나 실패하므로) */
 function whenVisible(): Promise<void> {
@@ -112,6 +114,15 @@ export default function ChatPage() {
   const [pushKey, setPushKey] = useState<string | null>(null);         // 서버가 알림을 지원하면 공개키
   const [push, setPush] = useState<PushState>("unsupported");          // 이 기기의 답변 알림 상태
   const [pushBusy, setPushBusy] = useState(false);
+  // 이 기기의 구독 주소. 질문을 보낼 때 기다리지 않도록 미리 받아 둔다
+  // (보내기 전에 await가 있으면 그 사이 홈 키를 누를 때 요청이 출발하지 못하고 멈춘다)
+  const pushEndpoint = useRef<string | null>(null);
+  useEffect(() => {
+    if (push !== "on") { pushEndpoint.current = null; return; }
+    void currentEndpoint().then((e) => { pushEndpoint.current = e; });
+  }, [push]);
+  const messagesRef = useRef<Message[]>([]);
+  messagesRef.current = messages;
   const sessionId = useRef<string | null>(storage.get());
   const scroller = useRef<HTMLElement>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
@@ -237,15 +248,34 @@ export default function ChatPage() {
     return false;
   }, []);
 
-  const ask = useCallback(async (text: string) => {
+  /** 첫 응답을 받기 전에 연결이 끊겼을 때: 화면이 돌아오면 그 질문이 서버에 도착했는지 확인한다.
+   *  도착했으면 그 실행, 확실히 안 왔으면 "none", 확인할 수 없으면 null */
+  const findArrived = useCallback(async (text: string): Promise<{ id: string; conversation_id: string } | "none" | null> => {
+    await whenVisible();
+    const known = new Set(messagesRef.current.flatMap((m) => (m.role === "bot" && m.meta?.runId ? [m.meta.runId] : [])));
+    for (let i = 0; i < ARRIVE_CHECKS; i++) {
+      const res = await fetch("/api/chat/recent").catch(() => null);
+      if (!res?.ok) return null;
+      const run = (await res.json().catch(() => ({})))?.run as { id: string; conversation_id: string; question: string } | null;
+      if (run && run.question === text.trim() && !known.has(run.id)) return run;
+      await new Promise((r) => setTimeout(r, ARRIVE_POLL_MS));   // 막 도착해 기록되는 중일 수 있다
+    }
+    return "none";
+  }, []);
+
+  const askRef = useRef<(text: string, retried?: boolean) => Promise<void>>(async () => undefined);
+
+  const ask = useCallback(async (text: string, retried = false) => {
     if (busy || !text.trim()) return;
     setBusy(true);
     let runId: string | null = null;   // 서버가 session 이벤트로 알려 준 이번 답변의 ID
     let streaming = false;             // 응답 스트림을 받기 시작했는가 (그 뒤의 실패는 연결 끊김)
+    let httpError = false;             // 서버가 거절함 (한도 초과 등): 연결 문제가 아니다
+    let resend = false;                // 질문이 서버에 닿지 못했음 → 화면이 돌아온 뒤 한 번 다시 보낸다
     // 답변 중 화면을 떠나면 서버에 알린다 → 떠나 있는 채로 끝나면 이 기기로 알림 (알림을 켠 경우)
-    const pushEndpoint = push === "on" ? await currentEndpoint() : null;
+    const endpoint = push === "on" ? pushEndpoint.current : null;
     const onVisibility = () => { if (runId) reportVisibility(runId, document.visibilityState === "hidden"); };
-    if (pushEndpoint) document.addEventListener("visibilitychange", onVisibility);
+    if (endpoint) document.addEventListener("visibilitychange", onVisibility);
     const botId = nextId + 1;
     setMessages((all) => [
       ...all,
@@ -257,9 +287,10 @@ export default function ChatPage() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, session_id: sessionId.current, push_endpoint: pushEndpoint }),
+        body: JSON.stringify({ message: text, session_id: sessionId.current, push_endpoint: endpoint }),
       });
       if (!res.ok) {
+        httpError = true;
         const body = await res.json().catch(() => ({}));
         if (res.status === 429 && String(body.detail || "").includes("번까지")) { setRemaining(0); setCredits(0); }
         if (res.status === 401) setMe((m) => (m ? { ...m, user: null } : m));  // 로그인이 풀렸으면 로그인 화면으로
@@ -270,7 +301,7 @@ export default function ChatPage() {
         const d = data as Record<string, unknown>;
         if (event === "session") {
           if (typeof d.run_id === "string") runId = d.run_id;
-          if (pushEndpoint && document.visibilityState === "hidden") onVisibility();  // 보내자마자 내렸으면
+          if (endpoint && document.visibilityState === "hidden") onVisibility();  // 보내자마자 내렸으면
           sessionId.current = String(d.session_id);
           storage.set(sessionId.current);
           setActiveId(sessionId.current);
@@ -295,8 +326,23 @@ export default function ChatPage() {
         }
       }
     } catch (e) {
-      const sid = sessionId.current;
-      if (streaming && runId && sid && loggedIn && await recover(sid, runId, botId)) {
+      let sid = sessionId.current;
+      if (!runId && !httpError && loggedIn) {
+        // 질문을 보내자마자 앱을 내려 첫 응답도 못 받음: 서버에 도착했으면 그 답변을 이어 받고, 아니면 다시 보낸다
+        updateBot(botId, () => ({ status: "연결이 끊겨 질문이 전달됐는지 확인하는 중", error: null }));
+        const arrived = await findArrived(text);
+        if (arrived === "none" && !retried) resend = true;
+        else if (arrived && arrived !== "none") {
+          runId = arrived.id;
+          sid = sessionId.current = arrived.conversation_id;
+          storage.set(sid);
+          setActiveId(sid);
+          streaming = true;
+        }
+      }
+      if (resend) {
+        // finally에서 다시 보낸다
+      } else if (streaming && runId && sid && loggedIn && await recover(sid, runId, botId)) {
         loadConversations();
         fetch("/api/me").then((r) => (r.ok ? r.json() : null)).then((m: Me | null) => {
           if (typeof m?.remaining === "number") setRemaining(m.remaining);
@@ -314,7 +360,12 @@ export default function ChatPage() {
       setBusy(false);
       textarea.current?.focus();
     }
-  }, [busy, loggedIn, loadConversations, recover, push]);
+    if (resend) {
+      setMessages((all) => all.filter((m) => m.id !== botId && m.id !== botId - 1));   // 닿지 못한 질문을 지우고
+      setTimeout(() => void askRef.current(text, true), 0);                           // 같은 질문을 다시 보낸다
+    }
+  }, [busy, loggedIn, loadConversations, recover, findArrived, push]);
+  askRef.current = ask;
 
   const submit = (e: FormEvent) => {
     e.preventDefault();

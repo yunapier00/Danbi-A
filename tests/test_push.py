@@ -211,3 +211,14 @@ async def test_push_when_connection_dropped(env):  # noqa: F811
             break
         await asyncio.sleep(0.05)
     assert [p["title"] for _, p in sender.sent] == ["단비 답변이 준비됐어요"]
+
+
+def test_recent_run_lets_client_check_arrival(env):  # noqa: F811
+    """질문을 보내자마자 앱을 내려 첫 응답을 못 받은 화면이, 돌아와서 질문이 도착했는지 확인한다."""
+    client, google, _ = make([Reply(text="답")], FakeSender())
+    assert client.get("/api/chat/recent").status_code == 401
+    login(client, google)
+    assert client.get("/api/chat/recent").json() == {"run": None}
+    sid = events(client.post("/api/chat", json={"message": "도서관 몇 시까지야?"}))[0][1]["session_id"]
+    run = client.get("/api/chat/recent").json()["run"]
+    assert run["question"] == "도서관 몇 시까지야?" and run["conversation_id"] == sid and run["status"] == "ok"
