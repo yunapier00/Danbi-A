@@ -47,6 +47,24 @@ const storage = {
 
 let nextId = 1;
 
+// 연결이 끊긴 답변 되찾기: 서버 답변 시간 상한(90초)보다 넉넉하게 기다린다
+const RECOVER_LIMIT_MS = 180_000;
+const RECOVER_START_MS = 30_000;   // 이 시간이 지나도 기록에 실행이 없으면 포기
+const RECOVER_POLL_MS = 3_000;
+
+/** 화면이 보일 때까지 기다린다 (백그라운드에서는 요청이 막히거나 실패하므로) */
+function whenVisible(): Promise<void> {
+  if (document.visibilityState === "visible") return Promise.resolve();
+  return new Promise((resolve) => {
+    const on = () => {
+      if (document.visibilityState !== "visible") return;
+      document.removeEventListener("visibilitychange", on);
+      resolve();
+    };
+    document.addEventListener("visibilitychange", on);
+  });
+}
+
 /** 저장된 실행 → 화면 메시지 */
 function toMessages(runs: PastRun[]): Message[] {
   const out: Message[] = [];
@@ -142,9 +160,36 @@ export default function ChatPage() {
   const updateBot = (id: number, patch: (m: BotMessage) => Partial<BotMessage>) =>
     setMessages((all) => all.map((m) => (m.id === id && m.role === "bot" ? { ...m, ...patch(m) } : m)));
 
+  /** 답변 도중 연결이 끊겼을 때(모바일에서 앱을 내리면 브라우저가 연결을 끊는다).
+   *  서버는 답변을 끝까지 만들어 기록하므로, 화면이 다시 보이면 대화 기록에서 그 답변을 받아 온다. */
+  const recover = useCallback(async (sid: string, runId: string, botId: number): Promise<boolean> => {
+    updateBot(botId, () => ({ status: "연결이 끊겨 답변을 다시 불러오는 중", error: null }));
+    const started = Date.now();
+    while (Date.now() - started < RECOVER_LIMIT_MS) {
+      await whenVisible();
+      const res = await fetch(`/api/conversations/${encodeURIComponent(sid)}`).catch(() => null);
+      if (res?.ok) {
+        const data = await res.json().catch(() => null);
+        const run = (data?.messages as PastRun[] | undefined)?.find((r) => r.id === runId);
+        if (run && run.status !== "running") {
+          const bot = toMessages([run])[1] as BotMessage;
+          updateBot(botId, () => ({ ...bot, id: botId }));
+          return true;
+        }
+        if (!run && Date.now() - started > RECOVER_START_MS) return false;   // 답변이 시작조차 안 됐음
+      } else if (res && res.status !== 404) {
+        return false;
+      }
+      await new Promise((r) => setTimeout(r, RECOVER_POLL_MS));
+    }
+    return false;
+  }, []);
+
   const ask = useCallback(async (text: string) => {
     if (busy || !text.trim()) return;
     setBusy(true);
+    let runId: string | null = null;   // 서버가 session 이벤트로 알려 준 이번 답변의 ID
+    let streaming = false;             // 응답 스트림을 받기 시작했는가 (그 뒤의 실패는 연결 끊김)
     const botId = nextId + 1;
     setMessages((all) => [
       ...all,
@@ -164,9 +209,11 @@ export default function ChatPage() {
         if (res.status === 401) setMe((m) => (m ? { ...m, user: null } : m));  // 로그인이 풀렸으면 로그인 화면으로
         throw new Error(body.detail || `요청 실패 (${res.status})`);
       }
+      streaming = true;
       for await (const { event, data } of readSSE(res)) {
         const d = data as Record<string, unknown>;
         if (event === "session") {
+          if (typeof d.run_id === "string") runId = d.run_id;
           sessionId.current = String(d.session_id);
           storage.set(sessionId.current);
           setActiveId(sessionId.current);
@@ -191,13 +238,25 @@ export default function ChatPage() {
         }
       }
     } catch (e) {
-      updateBot(botId, () => ({ error: e instanceof Error && e.message ? e.message : "서버에 연결할 수 없습니다." }));
+      const sid = sessionId.current;
+      if (streaming && runId && sid && loggedIn && await recover(sid, runId, botId)) {
+        loadConversations();
+        fetch("/api/me").then((r) => (r.ok ? r.json() : null)).then((m: Me | null) => {
+          if (typeof m?.remaining === "number") setRemaining(m.remaining);
+          if (m) setCredits(m.credits || 0);
+        }).catch(() => undefined);
+      } else {
+        updateBot(botId, () => ({
+          error: streaming ? "연결이 끊겨 답변을 받지 못했어요. 잠시 뒤 대화 목록에서 다시 열어 보세요."
+            : e instanceof Error && e.message ? e.message : "서버에 연결할 수 없습니다.",
+        }));
+      }
     } finally {
       updateBot(botId, () => ({ status: null }));
       setBusy(false);
       textarea.current?.focus();
     }
-  }, [busy, loggedIn, loadConversations]);
+  }, [busy, loggedIn, loadConversations, recover]);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();

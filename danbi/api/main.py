@@ -528,9 +528,23 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
                 recorder.store.refund_credit(run_id)
             yield _sse("error", {"message": "지금 질문이 많아요. 잠시 후 다시 시도해 주세요."})
             return
-        async with slots:
-            async for chunk in _answer(sid, session, message, ip, ukey, remaining, me, run_id, credits):
-                yield chunk
+        # 답변은 별도 태스크에서 끝까지 만든다. 모바일에서 앱을 내리면 브라우저가 연결을 끊는데,
+        # 그래도 답변은 완성돼 기록에 남고, 화면이 돌아오면 클라이언트가 대화 기록에서 받아 간다.
+        queue: asyncio.Queue[str | None] = asyncio.Queue()
+
+        async def produce() -> None:
+            try:
+                async with slots:
+                    async for chunk in _answer(sid, session, message, ip, ukey, remaining, me, run_id, credits):
+                        queue.put_nowait(chunk)
+            finally:
+                queue.put_nowait(None)
+
+        task = asyncio.create_task(produce())
+        answer_tasks.add(task)   # 응답 스트림이 닫혀도 태스크가 회수되지 않게 참조를 잡아 둔다
+        task.add_done_callback(answer_tasks.discard)
+        while (chunk := await queue.get()) is not None:
+            yield chunk
 
     async def _answer(sid: str, session: Session, message: str, ip: str | None, ukey: str | None,
                       remaining: int | None, me: CurrentUser | None, run_id: str, credits: int) -> AsyncIterator[str]:
@@ -544,7 +558,8 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
             events = recorder.record(events, run_id=run_id, question=message, channel="web", conversation_id=sid,
                                      client_ip=ip, user_key=ukey)
         try:
-            yield _sse("session", {"session_id": sid})
+            # run_id: 연결이 끊긴 클라이언트가 대화 기록에서 이 답변을 찾아 받아 갈 때 쓴다
+            yield _sse("session", {"session_id": sid, "run_id": run_id if recorder is not None else None})
             async for ev in events:
                 if isinstance(ev, TokenEvent):
                     yield _sse("token", {"text": ev.text})
@@ -577,8 +592,10 @@ def create_app(agent: Agent, *, sessions: SessionStore | None = None,
             yield _sse("error", {"message": f"오류가 발생했습니다: {type(e).__name__}"})
         finally:
             session.busy_since = None
-            await events.aclose()  # 클라이언트가 끊었을 때도 기록기가 'aborted'로 마무리하게 한다
+            await events.aclose()  # 도중에 취소돼도(서버 종료 등) 기록기가 'aborted'로 마무리하게 한다
 
+    answer_tasks: set[asyncio.Task] = set()
+    app.state.answer_tasks = answer_tasks
     return app
 
 

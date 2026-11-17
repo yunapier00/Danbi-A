@@ -264,3 +264,48 @@ def test_admin_locks_out_after_repeated_failures():
     assert [client.get("/api/admin/overview", headers=bad).status_code for _ in range(3)] == [401, 401, 429]
     assert client.get("/api/admin/overview", headers=AUTH).status_code == 429   # 잠긴 IP는 맞는 토큰도 잠시 막는다
     assert sum(a["action"] == "auth_failed" for a in store.audit_rows()) == 2   # 감사 로그가 무한정 쌓이지 않는다
+
+
+async def test_answer_finishes_after_client_disconnects():
+    """모바일에서 앱을 내리면 연결이 끊긴다. 그래도 답변은 끝까지 만들어 기록하고, 클라이언트가 나중에 받아 간다."""
+    import asyncio
+    import time as _t
+
+    def slow(q):
+        _t.sleep(0.3)
+        return ITEM_RESULT
+
+    store = TraceStore(None)
+    tools = ToolRegistry([Tool(ToolSpec("slow", "d", SCHEMA), slow)])
+    agent = Agent(FakeProvider([Reply(calls=[("slow", {"q": "1"})]), Reply(text="끝까지 만든 답")]), tools)
+    app = create_app(agent, recorder=TraceRecorder(store, agent))
+    body = json.dumps({"message": "q"}).encode()
+    got_chunk, sent = asyncio.Event(), []
+
+    async def receive():                       # 요청 본문을 준 뒤, 첫 조각을 받으면 연결을 끊는다
+        if not sent:
+            sent.append(1)
+            return {"type": "http.request", "body": body, "more_body": False}
+        await got_chunk.wait()
+        return {"type": "http.disconnect"}
+
+    chunks: list[bytes] = []
+
+    async def send(msg):
+        if msg["type"] == "http.response.body" and msg.get("body"):
+            chunks.append(msg["body"])
+            got_chunk.set()
+
+    scope = {"type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1", "method": "POST",
+             "scheme": "http", "path": "/api/chat", "raw_path": b"/api/chat", "query_string": b"",
+             "root_path": "", "headers": [(b"host", b"t"), (b"content-type", b"application/json")],
+             "client": ("127.0.0.1", 1), "server": ("t", 80)}
+    await asyncio.wait_for(app(scope, receive, send), 5)
+    first = json.loads(chunks[0].decode().split("data: ", 1)[1])
+    assert first["run_id"]
+    for _ in range(60):
+        run = store.run_detail(first["run_id"])["run"]
+        if run["status"] != "running":
+            break
+        await asyncio.sleep(0.05)
+    assert run["status"] == "ok" and run["answer"] == "끝까지 만든 답"
