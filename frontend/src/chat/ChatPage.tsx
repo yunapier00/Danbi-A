@@ -463,8 +463,10 @@ export default function ChatPage() {
             <Logo height={40} />
             <h1>단국대학교 비서 AI</h1>
             {me.login_enabled ? <>
-              <p>단국대학교 Google 계정(<b>@{me.domain}</b>)으로 로그인하면 이용할 수 있어요.</p>
-              <GoogleButton next="/" label="학교 Google 계정으로 로그인" />
+              {me.domain
+                ? <p>단국대학교 Google 계정(<b>@{me.domain}</b>)으로 로그인하면 이용할 수 있어요.</p>
+                : <p>Google 계정으로 로그인하면 이용할 수 있어요.</p>}
+              <GoogleButton next="/" label={me.domain ? "학교 Google 계정으로 로그인" : "Google 계정으로 로그인"} />
             </> : <p>로그인이 아직 준비되지 않았어요. 잠시 후 다시 시도해 주세요.</p>}
             {loginError && <p className="gate-error" role="alert"><AlertIcon /> {loginError}</p>}
           </section>

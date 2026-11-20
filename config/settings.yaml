@@ -111,7 +111,7 @@ limits:                       # 공개 채팅 남용·비용 방어 (하루 = �
 
 auth:                         # Google 로그인 — 클라이언트 ID·비밀값 등은 환경 변수 (docs/GOOGLE_LOGIN.md)
   allow_anonymous: false      # 로그인 없이 채팅 (구현돼 있음, 지금은 끔). 로컬 개발은 DANBI_ALLOW_ANONYMOUS=1
-  allowed_domain: dankook.ac.kr   # 학교 Google 계정만
+  allowed_domain: ""          # 비우면 모든 Google 계정 (2026-11-20, 캡스톤 전시 동안 개방). 학교 계정만 받으려면 dankook.ac.kr
   session_days: 30            # 로그인 유지 (쓸 때마다 연장)
   admin_session_hours: 12     # 개발자 페이지는 로그인한 지 12시간 안에만
 

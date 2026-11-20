@@ -47,12 +47,12 @@ def env(monkeypatch):
     monkeypatch.delenv("DANBI_PUBLIC_URL", raising=False)
 
 
-def make(env, *, allow_anonymous=False, admin_token=None, replies=None, limits=None):
+def make(env, *, allow_anonymous=False, admin_token=None, replies=None, limits=None, allowed_domain="dankook.ac.kr"):
     store = TraceStore(None)
     agent = Agent(FakeProvider(replies or [Reply(text="답")] * 6), ToolRegistry([]))
     google = FakeGoogle()
     app = create_app(agent, recorder=TraceRecorder(store, agent), admin_token=admin_token,
-                     auth=AuthSettings(allow_anonymous=allow_anonymous), auth_http=google.http,
+                     auth=AuthSettings(allow_anonymous=allow_anonymous, allowed_domain=allowed_domain), auth_http=google.http,
                      auth_verifier=google.verify, limits=limits)
     return TestClient(app, base_url="https://testserver"), store, google
 
@@ -134,6 +134,21 @@ def test_rejected_claims(env, over, code):
     _, cb = login(client, google, **over)
     assert cb.headers["location"] == f"/?login_error={code}" and SESSION_COOKIE not in cb.headers.get("set-cookie", "")
     assert store._one("SELECT COUNT(*) AS n FROM auth_sessions")["n"] == 0
+
+
+def test_open_domain_accepts_any_verified_google_account(env):
+    # allowed_domain을 비우면 (전시 기간 개방) hd 힌트를 보내지 않고 개인 Gmail도 받는다
+    client, store, google = make(env, allowed_domain="")
+    r = client.get("/api/auth/login", follow_redirects=False)
+    assert "hd" not in parse_qs(urlparse(r.headers["location"]).query)
+    _, cb = login(client, google, hd=None, email="visitor@gmail.com", sub="555")
+    assert cb.status_code == 302 and cb.headers["location"] == "/"
+    me = client.get("/api/me").json()
+    assert me["user"]["email"] == "visitor@gmail.com" and me["domain"] == ""
+    # 이메일 인증이 안 된 계정은 여전히 거절
+    other, _, g2 = make(env, allowed_domain="")
+    _, cb2 = login(other, g2, hd=None, email="x@gmail.com", email_verified=False)
+    assert cb2.headers["location"] == "/?login_error=unverified"
 
 
 def test_nonce_and_state_checks(env):

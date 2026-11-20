@@ -9,7 +9,7 @@ from __future__ import annotations
 import html
 import os
 
-EFFECTIVE_DATE = "2026년 11월 17일"
+EFFECTIVE_DATE = "2026년 11월 20일"
 
 _STYLE = """
 body{margin:0;background:#f8fafc;color:#0f172a;font:15px/1.7 system-ui,-apple-system,"Segoe UI","Malgun Gothic",sans-serif}
@@ -39,7 +39,7 @@ def render_privacy() -> str:
 <h2>1. 처리하는 개인정보 항목</h2>
 <table>
 <tr><th>구분</th><th>항목</th></tr>
-<tr><td>웹 (학교 Google 계정 로그인)</td><td>이메일 주소, 이름, Google 계정 고유 식별자, 소속 도메인(dankook.ac.kr)</td></tr>
+<tr><td>웹 (Google 계정 로그인)</td><td>이메일 주소, 이름, Google 계정 고유 식별자, 소속 도메인(학교·기관 계정인 경우, 예: dankook.ac.kr)</td></tr>
 <tr><td>카카오톡 채널</td><td>카카오가 제공하는 사용자 식별값을 되돌릴 수 없게 변환(해시)한 값 (원래 식별값은 저장하지 않음)</td></tr>
 <tr><td>eclass 일정 연결 (선택, 웹)</td><td>이용자가 직접 등록한 eclass(Canvas) 캘린더 피드 주소 (암호화해 저장).
 피드에서 읽은 과제·일정은 저장하지 않고, 답변에 쓰기 위해 서버 메모리에 최대 30분 동안만 둡니다.</td></tr>

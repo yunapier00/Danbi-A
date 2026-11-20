@@ -131,9 +131,10 @@ class Auth:
             "client_id": self.settings.client_id, "redirect_uri": self.redirect_uri(request), "response_type": "code",
             "scope": "openid email profile", "state": state, "nonce": nonce,
             "code_challenge": _b64(hashlib.sha256(verifier.encode()).digest()), "code_challenge_method": "S256",
-            "hd": self.settings.allowed_domain,  # 학교 계정을 먼저 보여주는 힌트일 뿐, 검증은 콜백에서 한다
             "prompt": "select_account",
         }
+        if self.settings.allowed_domain:
+            params["hd"] = self.settings.allowed_domain  # 학교 계정을 먼저 보여주는 힌트일 뿐, 검증은 콜백에서 한다
         resp = RedirectResponse(f"{AUTH_URL}?{urlencode(params)}", status_code=302)
         # 이 브라우저에서 시작한 로그인인지 묶어 둔다 (다른 사람이 만든 state로 로그인시키는 공격 방지)
         resp.set_cookie(FLOW_COOKIE, state, max_age=FLOW_TTL, httponly=True, secure=True, samesite="lax", path="/")

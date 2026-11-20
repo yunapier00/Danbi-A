@@ -172,7 +172,7 @@ def test_my_schedule_tool():
     svc, _, uid = service()
     tool = make_my_schedule(svc)
     me = CurrentUser(uid, f"google:{uid}")
-    assert "웹 채팅에 학교 Google 계정으로 로그인" in run_tool(tool, None)       # 카카오·CLI
+    assert "웹 채팅에 Google 계정으로 로그인" in run_tool(tool, None)       # 카카오·CLI
     assert run_tool(tool, me).startswith(CONNECT_MARK)                          # 연결 전
     assert "꺼져" in run_tool(make_my_schedule(None), me)
     svc.connect(uid, FEED)

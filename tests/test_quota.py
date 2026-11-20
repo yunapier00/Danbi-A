@@ -130,7 +130,10 @@ def test_cli_grant_list_revoke(tmp_path):
     r = cli(tmp_path, "grant", "--email", "TA@dankook.ac.kr", "--daily", "20", "--until", "2099-12-31", "--note", "조교")
     assert r.returncode == 0 and "이용권 1: ta@dankook.ac.kr 하루 20회, 2099-12-31 23:59까지" in r.stdout
     r = cli(tmp_path, "grant", "--email", "x@gmail.com", "--credits", "5", "--days", "30")
-    assert "주의: dankook.ac.kr 계정이 아닙니다" in r.stdout
+    # settings.yaml의 auth.allowed_domain을 따른다: 비어 있으면(모든 Google 계정 허용) 경고 없음
+    from danbi.config import load_settings
+    domain = load_settings().auth.allowed_domain
+    assert (f"주의: {domain} 계정이 아닙니다" in r.stdout) if domain else ("주의" not in r.stdout)
     out = cli(tmp_path, "grants").stdout
     assert "[1] 유효 · ta@dankook.ac.kr · 하루 20회 · 2099-12-31 23:59까지 · admin · 조교" in out
     assert "[2] 유효 · x@gmail.com · 추가 5회 (남은 5회)" in out

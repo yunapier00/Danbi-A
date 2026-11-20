@@ -56,7 +56,7 @@ def make_my_schedule(service: EclassService | None) -> Tool:
     def my_schedule(start: str | None = None, end: str | None = None, keyword: str | None = None) -> str:
         user = CURRENT_USER.get()
         if user is None:
-            return ("eclass 일정은 웹 채팅에 학교 Google 계정으로 로그인하고 eclass 캘린더를 연결한 사용자만 볼 수 있습니다. "
+            return ("eclass 일정은 웹 채팅에 Google 계정으로 로그인하고 eclass 캘린더를 연결한 사용자만 볼 수 있습니다. "
                     "지금 사용 중인 곳(카카오톡 등)에서는 개인 일정을 확인할 수 없다고 안내하세요.")
         if service is None or not service.enabled:
             return "이 서버에서는 eclass 연결 기능이 꺼져 있습니다. 개인 일정은 eclass에서 직접 확인하도록 안내하세요."
