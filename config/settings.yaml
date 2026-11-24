@@ -106,7 +106,7 @@ limits:                       # 공개 채팅 남용·비용 방어 (하루 = �
   per_user_per_day: 3         # 한 사람의 하루 질문 수 (웹 = IP, 카카오 = 사용자). 추적 DB에서 세므로 재시작해도 유지
   daily_questions: 1000       # 웹 채널 전체 하루 질문 수 상한
   daily_tokens: 20000000      # 웹 채널 전체 하루 토큰(입력+출력) 상한
-  max_concurrent: 8           # 동시에 답하는 질문 수 (2026-11-24, 캡스톤 전시 대비 4→8)
+  max_concurrent: 8           # 동시에 답하는 질문 수 (2026-11-24, 4→8)
   admin_auth_failures: 10     # IP당 10분에 허용하는 개발자 토큰 실패 횟수
 
 auth:                         # Google 로그인 — 클라이언트 ID·비밀값 등은 환경 변수 (docs/GOOGLE_LOGIN.md)
